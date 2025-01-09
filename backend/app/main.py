@@ -9,6 +9,7 @@ def create_app() -> FastAPI:
     app = FastAPI()
 
     # Include routers
+    app.include_router(call_routes.router)
     app.include_router(ws_routes.router)
 
     return app
