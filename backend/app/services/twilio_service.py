@@ -10,7 +10,7 @@ from twilio.rest import Client as TwilioClient
 class TwilioService:
 
     @classmethod
-    def get_twilio_service(cls) -> "TwilioService":
+    def get_instance(cls) -> "TwilioService":
         # load_dotenv()
         # account_sid = os.getenv("TWILIO_ACCOUNT_SID")
         # auth_token = os.getenv("TWILIO_AUTH_TOKEN")

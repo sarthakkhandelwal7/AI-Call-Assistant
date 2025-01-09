@@ -12,7 +12,7 @@ call_status = CallStatus.NO_CURRENT_CALL
 @router.post("/calls/outbound")
 async def handle_outbound_call(
     request: CallRequest,
-    twilio_service: TwilioService = Depends(TwilioService.get_twilio_service)
+    twilio_service: TwilioService = Depends(TwilioService.get_instance)
 ) -> Response:
     """Handle outgoing calls"""
     return Response(content="Call initiated", media_type="text/plain")
@@ -21,7 +21,7 @@ async def handle_outbound_call(
 @router.post("/inbound")
 async def handle_inbound_call(
     request: Request,
-    twilio_service: TwilioService = Depends(TwilioService.get_twilio_service),
+    twilio_service: TwilioService = Depends(TwilioService.get_instance),
 ) -> Response:
     """Handle incoming calls from Twilio"""
     global call_status
