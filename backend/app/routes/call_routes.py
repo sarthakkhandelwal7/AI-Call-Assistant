@@ -9,10 +9,11 @@ load_dotenv()
 router = APIRouter(prefix="/calls", tags=["calls"])
 call_status = CallStatus.NO_CURRENT_CALL
 
+
 @router.post("/calls/outbound")
 async def handle_outbound_call(
     request: CallRequest,
-    twilio_service: TwilioService = Depends(TwilioService.get_instance)
+    twilio_service: TwilioService = Depends(TwilioService.get_instance),
 ) -> Response:
     """Handle outgoing calls"""
     return Response(content="Call initiated", media_type="text/plain")

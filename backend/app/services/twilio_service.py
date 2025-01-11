@@ -30,30 +30,51 @@ class TwilioService:
             self.client = TwilioClient(account_sid, auth_token)
 
         self.phone_number = phone_number
-    
-    @staticmethod
-    async def receive_audio(ws: WebSocket) -> None:
-        """Receive audio stream from Twilio"""
+        self.stream_sid = None
+
+    async def receive_audio_start(self, ws: WebSocket) -> None:
+        """Wait for initial message to get stream_sid"""
         while True:
             message = await ws.receive_text()
-            if not message:
-                print("No message received...")
-                continue
-
             data = json.loads(message)
             if data["event"] == "start":
-                stream_sid = data.get("streamSid")
-                call_sid = data.get("start", {}).get("callSid")
-                print(f"Call started with SID: {call_sid}")
-
-            if data["event"] == "media":
-                media = data.get("media")
-
-            if data["event"] == "stop":
-                print("Closed Message received", message)
+                self.stream_sid = data["start"]["streamSid"]
+                print(f"Call started with Stream SID: {self.stream_sid}")
                 break
-        
-        return media
+
+    async def receive_audio(self, twilio_ws: WebSocket, openai_ws: WebSocket) -> None:
+        """Receive audio stream from Twilio and send it to OpenAI"""
+        try:
+            async for message in twilio_ws.iter_text():
+                data = json.loads(message)
+
+                if data["event"] == "media" and openai_ws.state.value == 1:
+                    payload = {
+                        "type": "input_audio_buffer.append",
+                        "audio": data["media"]["payload"],
+                    }
+                    await openai_ws.send(json.dumps(payload))
+
+                if data["event"] == "stop":
+                    print("Closed Message received", message)
+                    break
+
+        except Exception as e:
+            print(f"Error receiving audio: {e}")
+            if openai_ws.state.value == 1:
+                await openai_ws.close()
+
+    # async def send_audio(self, twilio_ws: WebSocket, openai_ws: WebSocket) -> None:
+    #     """Send audio stream to Twilio"""
+    #     try:
+    #         async for message in openai_ws:
+    #             data = json.loads(message)
+    #             if data['type']
+
+    #     except Exception as e:
+    #         print(f"Error sending audio: {e}")
+    #         if twilio_ws.open:
+    #             await twilio_ws.close()
 
     def transfer_call(self, call_sid: str, to_number: str) -> None:
         """Transfer active call to another number"""

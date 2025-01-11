@@ -13,4 +13,3 @@ class CallStatus(Enum):
 
 class CallRequest(BaseModel):
     phone_number: str = Field(..., title="Phone number to call")
-
