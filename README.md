@@ -59,6 +59,8 @@ HARVEY_PHONE_NUMBER=target_transfer_number
 STREAM_URL=your_websocket_url
 OPENAI_API_KEY=your_openai_key
 CALENDLY_URL=your_scheduling_link
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 ### Installation
@@ -76,18 +78,22 @@ CALENDLY_URL=your_scheduling_link
     poetry install
     ```
 
-3. Set up Google Calendar credentials:
+3. Set up Google Calendar credentials (to register the application with Google):
 
-    - Create a project in Google Cloud Console
+    - Create a project in the Google Cloud Console
     - Enable Calendar API
-    - Download credentials.json
-    - Place in project root
+    - Go to Credentials and generate OAuth 2.0 credentials 
+    - Save GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env
+    - register http://localhost:3001 in Authorized JavaScript origins
 
 4. Start the server:
     ```bash
     poetry run uvicorn app.main:app --reload
     ```
-
+5. Run the docker-compose file to run the front end in a docker container.
+    - Frontend URL: http://localhost:3001
+    - You can register your Google Calander to fetch events
+   
 ## API Endpoints
 
 ### Call Management
