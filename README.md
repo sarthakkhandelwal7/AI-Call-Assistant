@@ -66,8 +66,8 @@ CALENDLY_URL=your_scheduling_link
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/yourusername/ai-secretary.git
-    cd ai-secretary
+    git clone https://github.com/sarthakkhandelwal7/ai-secretary.git
+    cd ai-call-assistant/backend
     ```
 
 2. Install dependencies:
