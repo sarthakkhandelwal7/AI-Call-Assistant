@@ -7,6 +7,7 @@ import websockets
 import os
 from dotenv import load_dotenv
 
+from backend.app.services.calendar_service import CalendarService
 from backend.app.services.open_ai_service import OpenAiService
 from backend.app.services.twilio_service import TwilioService
 
@@ -17,19 +18,23 @@ router = APIRouter()
 async def websocket_endpoint(
     ws: WebSocket,
     twilio_service: TwilioService = Depends(TwilioService.get_instance),
+    calendar_service: CalendarService = Depends(CalendarService.get_instance),
 ) -> None:
     """Handle WebSocket connection"""
     await ws.accept()
     print("WebSocket connection established with Twilio")
 
     try:
-        async with OpenAiService() as openai_service:
-            await twilio_service.receive_audio_start(ws)
-            openai_service.stream_sid = twilio_service.stream_sid
+        # Fetch stream SID from Twilio and saves both twilio ws and SID to TwilioService instance
+        await twilio_service.fetch_stream_sid(ws)
+        async with OpenAiService(
+            twilio_service,
+            calendar_service,
+        ) as openai_service:
 
             await asyncio.gather(
-                twilio_service.receive_audio(ws, openai_ws=openai_service._ws),
-                openai_service.receive_audio(ws),
+                twilio_service.receive_audio(openai_ws=openai_service._ws),
+                openai_service.receive_audio(),
             )
 
     except Exception as e:
@@ -38,9 +43,6 @@ async def websocket_endpoint(
     finally:
         await ws.close()
         print("WebSocket connection closed")
-        if openai_service and openai_service._ws.state == 1:
-            await openai_service.close()
-            print("OpenAI WebSocket connection closed")
 
 
 router.add_api_websocket_route("/audio-stream", websocket_endpoint)

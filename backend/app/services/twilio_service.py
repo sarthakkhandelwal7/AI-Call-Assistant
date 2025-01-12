@@ -11,11 +11,6 @@ class TwilioService:
 
     @classmethod
     def get_instance(cls) -> "TwilioService":
-        # load_dotenv()
-        # account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-        # auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-        # phone_number = os.getenv("TWILIO_PHONE_NUMBER")
-        # return cls(account_sid, auth_token, phone_number)
         return cls()
 
     def __init__(
@@ -31,21 +26,23 @@ class TwilioService:
 
         self.phone_number = phone_number
         self.stream_sid = None
+        self.ws = None
 
-    async def receive_audio_start(self, ws: WebSocket) -> None:
+    async def fetch_stream_sid(self, ws: WebSocket) -> None:
         """Wait for initial message to get stream_sid"""
+        self.ws = ws
         while True:
-            message = await ws.receive_text()
+            message = await self.ws.receive_text()
             data = json.loads(message)
             if data["event"] == "start":
                 self.stream_sid = data["start"]["streamSid"]
                 print(f"Call started with Stream SID: {self.stream_sid}")
                 break
 
-    async def receive_audio(self, twilio_ws: WebSocket, openai_ws: WebSocket) -> None:
+    async def receive_audio(self, openai_ws: WebSocket) -> None:
         """Receive audio stream from Twilio and send it to OpenAI"""
         try:
-            async for message in twilio_ws.iter_text():
+            async for message in self.ws.iter_text():
                 data = json.loads(message)
 
                 if data["event"] == "media" and openai_ws.state.value == 1:
@@ -61,26 +58,17 @@ class TwilioService:
 
         except Exception as e:
             print(f"Error receiving audio: {e}")
-            if openai_ws.state.value == 1:
+        
+        finally:
+            if openai_ws and openai_ws.state.value == 1:
                 await openai_ws.close()
-
-    # async def send_audio(self, twilio_ws: WebSocket, openai_ws: WebSocket) -> None:
-    #     """Send audio stream to Twilio"""
-    #     try:
-    #         async for message in openai_ws:
-    #             data = json.loads(message)
-    #             if data['type']
-
-    #     except Exception as e:
-    #         print(f"Error sending audio: {e}")
-    #         if twilio_ws.open:
-    #             await twilio_ws.close()
 
     def transfer_call(self, call_sid: str, to_number: str) -> None:
         """Transfer active call to another number"""
 
-    def end_call(self, call_sid: str) -> None:
+    def end_call(self, call_sid: str=None) -> None:
         """End active call"""
+        self.ws.close()
 
     def send_sms(self, to_number: str, message: str) -> None:
         """Send SMS message"""

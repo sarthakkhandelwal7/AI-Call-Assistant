@@ -17,11 +17,13 @@ google-auth-httplib2 = "^0.2.0"
 requests = "^2.32.3"
 websockets = "^14.1"
 google-api-python-client = "^2.157.0"
+pytz = "^2024.2"
 
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.10.0"
 wave = "^0.0.2"
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core"]
