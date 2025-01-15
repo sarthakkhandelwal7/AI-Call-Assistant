@@ -140,3 +140,6 @@ poetry run pytest
     ```bash
     poetry run uvicorn app.main:app --reload --port 8000
     ```
+
+### Acknowledgments
+This project draws inspiration from [donna](https://github.com/raviriley/donna). It is a valuable reference while exploring and enhancing capabilities in building applications powered by LLMs like ChatGPT.
