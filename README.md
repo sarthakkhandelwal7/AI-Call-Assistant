@@ -27,7 +27,7 @@ An intelligent call screening system inspired by Donna from the TV show Suits. T
 
     - Real-time audio processing
     - Natural language understanding
-    - Context-aware decision making
+    - Context-aware decision-making
 
 3. **Twilio Integration**
 
@@ -68,7 +68,7 @@ GOOGLE_CLIENT_SECRET=
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/sarthakkhandelwal7/ai-secretary.git
+    git clone https://github.com/sarthakkhandelwal7/AI-Call-Assistant
     cd ai-call-assistant/backend
     ```
 
@@ -84,7 +84,7 @@ GOOGLE_CLIENT_SECRET=
     - Enable Calendar API
     - Go to Credentials and generate OAuth 2.0 credentials 
     - Save GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env
-    - register http://localhost:3001 in Authorized JavaScript origins
+    - Register http://localhost:3001 or your frontend uri in Authorized JavaScript origins
 
 4. Start the server:
     ```bash
@@ -100,12 +100,12 @@ GOOGLE_CLIENT_SECRET=
 
 -   `POST /calls/inbound`: Handle incoming Twilio calls
 -   `POST /calls/outbound`: Initiate outbound calls
--   `GET /calls/status`: Check current call status
--   `WS /ws`: WebSocket endpoint for audio streaming
+-   `GET /calls/status`: Check the current call status
+-   `WS /audio-stream`: WebSocket endpoint for audio streaming
 
 ## Call Flow
 
-1. Caller dials Twilio number
+1. The caller dials the Twilio number
 2. Twilio webhooks to backend
 3. WebSocket connection established
 4. Audio streamed to OpenAI
