@@ -13,8 +13,10 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[os.getenv("FRONTEND_URL")],  # Your React frontend URL
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+        expose_headers=["Content-Length"],
+        max_age=600,  # Cache preflight requests for 10 minutes
     )
     # Include routers
     app.include_router(call_routes.router)
