@@ -58,3 +58,7 @@ project-plan.md
 Design-Dock/
 credentials/
 responses/
+
+# Database
+alembic/
+alembic.ini

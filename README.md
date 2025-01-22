@@ -1,13 +1,13 @@
 # AI Secretary
 
-An intelligent call screening system inspired by Donna from the TV show Suits. This AI secretary uses natural language processing to screen calls, manage schedules, and make intelligent decisions about call handling.
+An intelligent call screening system. This AI secretary uses natural language processing to screen calls, manage schedules, and make intelligent decisions about call handling.
 
 ## Features
 
 -   🎙️ Real-time call screening using OpenAI's Realtime API
 -   📅 Google Calendar integration for schedule awareness
 -   📞 Smart call handling (transfer, schedule, or end calls)
--   💬 Natural conversation with Donna's personality
+-   💬 Natural conversation with personality you want your assistant to be
 -   📱 SMS scheduling link integration
 -   🔄 Real-time audio streaming and processing
 
