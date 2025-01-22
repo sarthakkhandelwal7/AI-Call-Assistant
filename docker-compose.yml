@@ -14,3 +14,32 @@ services:
             - WATCHPACK_POLLING=true
             - WDS_SOCKET_PORT=3001
         command: npm start
+
+    db:
+        image: postgres:alpine
+        ports:
+            - "5432:5432"
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=ai_secretary
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+    pgadmin:
+        image: dpage/pgadmin4
+        ports:
+            - "5050:80"
+        environment:
+            - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+            - PGADMIN_DEFAULT_PASSWORD=admin
+            - PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False # Add this line
+            - PGADMIN_CONFIG_CONSOLE_LOG_LEVEL=10 # Optional: for more debugging info
+        volumes:
+            - pgadmin_data:/var/lib/pgadmin
+        depends_on:
+            - db
+
+volumes:
+    postgres_data:
+    pgadmin_data:
