@@ -81,9 +81,9 @@ class OpenAiService:
             "3. Always use appropriate tool (hang_up, schedule_call, or transfer_call) to end interaction\n"
         )
 
-    def __init__(self, twilio_service, calendar_service):
+    def __init__(self, twilio_service, events=None):
         self.twilio_service = twilio_service
-        self.calendar_service = calendar_service
+        self.events = events
 
     @classmethod
     async def create(cls) -> "OpenAiService":
@@ -114,9 +114,7 @@ class OpenAiService:
         """Initialize session with OpenAI"""
         if not self._ws:
             raise RuntimeError("WebSocket connection not established")
-
-        self.events = self.calendar_service.get_todays_events()
-
+        
         session_update = {
             "type": "session.update",
             "session": {
@@ -215,7 +213,7 @@ class OpenAiService:
                         self.twilio_service.send_sms(None, None)
 
                     elif function_name == "transfer_call":
-                        self.twilio_service.transfer_call(None, None)
+                        self.twilio_service.transfer_call()
 
         except Exception as e:
             print(f"Error receiving audio: {e}")

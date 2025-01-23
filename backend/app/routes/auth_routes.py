@@ -115,7 +115,10 @@ async def get_current_user(
             "email": user.email,
             "full_name": user.full_name,
             "profile_picture": user.profile_picture,
-            "calendar_connected": user.calendar_connected
+            "calendar_connected": user.calendar_connected,
+            "timezone": user.timezone,
+            "twilio_number": user.twilio_number,
+            "user_number": user.user_number,
         }
     except Exception as e:
         print(f"Get User Info Error: {type(e).__name__}: {str(e)}")

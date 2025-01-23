@@ -1,8 +1,10 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from sqlalchemy.sql import func
+
 
 Base = declarative_base()
 
@@ -15,10 +17,14 @@ class User(Base):
     full_name = Column(String)
     profile_picture = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_login = Column(DateTime(timezone=True), nullable=True)
     refresh_token = Column(String, nullable=True)
     calendar_connected = Column(Boolean, default=False)
+    timezone = Column(String, default='UTC')
+    twilio_number = Column(String, unique=True, nullable=True, index=True)
+    user_number = Column(String, unique=True, nullable=True, index=True)
+
 
 # Pydantic models for request/response validation
 class UserCreate(BaseModel):
@@ -26,6 +32,8 @@ class UserCreate(BaseModel):
     google_id: str
     full_name: str
     profile_picture: Optional[str] = None
+    timezone: Optional[str] = 'UTC'
+    twilio_number: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: int
@@ -33,12 +41,8 @@ class UserResponse(BaseModel):
     full_name: str
     profile_picture: Optional[str] = None
     calendar_connected: bool
+    timezone: str
+    twilio_number: Optional[str] = None
 
     class Config:
         from_attributes = True
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
-    refresh_token: Optional[str] = None

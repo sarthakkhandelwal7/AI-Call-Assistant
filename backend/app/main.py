@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import call_routes, ws_routes, auth_routes
+from app.middleware.security import SecurityMiddleware
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -27,6 +28,11 @@ def create_app() -> FastAPI:
         expose_headers=["*"],
         max_age=600,
     )
+        
+    
+    # Security middleware
+    app.add_middleware(SecurityMiddleware)
+    
     
     # Include routers
     app.include_router(auth_routes.router)
