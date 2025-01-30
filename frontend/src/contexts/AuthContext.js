@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -7,68 +7,73 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const getCsrfToken = () => document.cookie
+    const getCsrfToken = useCallback(() => document.cookie
         .split('; ')
         .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1];
+        ?.split('=')[1], []);
 
-    const makeAuthenticatedRequest = async (url, options = {}) => {
-        const csrfToken = getCsrfToken();
-        
-        const headers = {
-            ...options.headers,
-            'X-CSRF-Token': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest',
-        };
+    const makeAuthenticatedRequest = useCallback(async (url, options = {}) => {
+        try {
+            const headers = {
+                ...options.headers,
+                'Content-Type': 'application/json',
+            };
+    
+            const response = await fetch(url, {
+                ...options,
+                credentials: 'include',
+                headers
+            });
+    
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Request failed');
+            }
+    
+            return response;
+        } catch (error) {
+            console.error('Request Error:', error);
+            throw error;
+        }
+    }, []);
 
-        return fetch(url, {
-            ...options,
-            credentials: 'include',
-            headers
-        });
-    };
+    const updateUserProfile = useCallback(async (updates) => {
+        try {
+            const response = await makeAuthenticatedRequest(
+                'http://localhost:8000/auth/update-profile',
+                {
+                    method: 'POST',
+                    body: JSON.stringify(updates)
+                }
+            );
+            
+            const updatedUser = await response.json();
+            setUser(updatedUser);
+            return updatedUser;
+        } catch (err) {
+            console.error('Update profile error:', err);
+            throw err;
+        }
+    }, [makeAuthenticatedRequest]);
 
-    const checkAuth = async () => {
+    const checkAuth = useCallback(async () => {
         try {
             const response = await makeAuthenticatedRequest(
                 'http://localhost:8000/auth/get-user-info'
             );
-
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-            } else if (response.status === 401) {
-                await refreshToken();
-            }
+    
+            const userData = await response.json();
+            setUser(userData);
         } catch (err) {
-            setError(err.message);
+            console.error('Check Auth Error:', err);
+            setUser(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, [makeAuthenticatedRequest]);
 
-    const refreshToken = async () => {
+    const login = useCallback(async (googleResponse) => {
         try {
-            const response = await makeAuthenticatedRequest(
-                'http://localhost:8000/auth/refresh',
-                { method: 'POST' }
-            );
-
-            if (response.ok) {
-                await checkAuth();
-            } else {
-                throw new Error('Failed to refresh token');
-            }
-        } catch (err) {
-            setError(err.message);
-            logout();
-        }
-    };
-
-    const login = async (googleResponse) => {
-        try {
-            console.log('Full Google Response:', googleResponse);
-            
             const response = await fetch('http://localhost:8000/auth/google-login', {
                 method: 'POST',
                 credentials: 'include',
@@ -76,29 +81,23 @@ export const AuthProvider = ({ children }) => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    code: googleResponse.code  // Ensure this is a string
+                    code: googleResponse.code
                 })
             });
-    
-            console.log('Login Response Status:', response.status);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Login Error:', errorText);
                 throw new Error(errorText || 'Login failed');
             }
     
-            const responseData = await response.json();
-            console.log('Login Response Data:', responseData);
-    
             await checkAuth();
         } catch (err) {
-            console.error('Login Catch Error:', err);
+            console.error('Login Error:', err);
             setError(err.message);
         }
-    };
+    }, [checkAuth]);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             await makeAuthenticatedRequest(
                 'http://localhost:8000/auth/logout',
@@ -109,7 +108,7 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setUser(null);
         }
-    };
+    }, [makeAuthenticatedRequest]);
 
     useEffect(() => {
         checkAuth();
@@ -121,7 +120,8 @@ export const AuthProvider = ({ children }) => {
             loading,
             error,
             login,
-            logout
+            logout,
+            updateUserProfile
         }}>
             {children}
         </AuthContext.Provider>
