@@ -82,7 +82,7 @@ async def verify_token_middleware(
             )
             
         # Verify the token
-        user_id = auth_service.verify_token(token)
+        user_id = auth_service.verify_token(token, request)
         request.state.user_id = user_id
         
         return token

@@ -9,7 +9,7 @@ import requests
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from backend.app.models.user import User, UserCreate
+from app.models.user import User, UserCreate
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -31,7 +31,7 @@ class AuthService:
                 'refresh_token': refresh_token,
                 'client_id': self.google_client_id,
                 'client_secret': self.google_client_secret,
-                'scopes': ["https://www.googleapis.com/auth/calendar.events"]
+                'scopes': ["https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/calendar.readonly"]
             })
             
             service = build('calendar', 'v3', credentials=credentials)
@@ -48,7 +48,7 @@ class AuthService:
 
     def create_access_token(self, user_id: int, request: Request) -> tuple[str, datetime]:
         """Create access token with fingerprint"""
-        expires = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
+        expires = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         
         fingerprint = self._generate_fingerprint(request)
         csrf_token = secrets.token_hex(32)
@@ -96,7 +96,7 @@ class AuthService:
     async def verify_google_token(self, token: str) -> dict:
         try:
             print(f"Verifying token: {token}")
-            
+            print(f"FRONTEND_URL: {os.getenv('FRONTEND_URL')}")
             token_response = requests.post(
                 'https://oauth2.googleapis.com/token',
                 data={
@@ -147,7 +147,7 @@ class AuthService:
             
             if user:
                 # Update existing user
-                user.last_login = datetime.now(datetime.timezone.utc)
+                user.last_login = datetime.now(timezone.utc)
                 user.profile_picture = user_data.get('profile_picture')
                 user.calendar_connected = user_data.get('refresh_token') is not None
                 

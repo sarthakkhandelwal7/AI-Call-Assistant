@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import call_routes, ws_routes, auth_routes
+from app.routes import call_routes, ws_routes, auth_routes, phone_number_routes
 from app.middleware.security import SecurityMiddleware
 from dotenv import load_dotenv
 
@@ -38,7 +38,8 @@ def create_app() -> FastAPI:
     app.include_router(auth_routes.router)
     app.include_router(call_routes.router)
     app.include_router(ws_routes.router)
-    
+    app.include_router(phone_number_routes.router)
+        
     return app
 
 app = create_app()

@@ -7,13 +7,12 @@ import websockets
 import os
 from dotenv import load_dotenv
 
-from backend.app.database import get_db
-from backend.app.models.user import User
-from backend.app.services.open_ai_service import OpenAiService
-from backend.app.services.twilio_service import TwilioService
+from app.database import get_db
+from app.models.user import User
+from app.services.open_ai_service import OpenAiService
+from app.services.twilio_service import TwilioService
+from app.utils.calendar_events import get_calendar_events
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from backend.app.utils.calendar_events import get_calendar_events
 
 router = APIRouter()
 
@@ -21,7 +20,7 @@ router = APIRouter()
 @router.websocket("/audio-stream")
 async def websocket_endpoint(
     ws: WebSocket,
-    twilio_service: TwilioService = Depends(TwilioService.get_instance),
+    twilio_service: TwilioService = Depends(TwilioService),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Handle WebSocket connection"""

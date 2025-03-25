@@ -1,6 +1,7 @@
+import asyncio
 import json
 from fastapi import WebSocket
-from typing import Optional
+from typing import Coroutine, Optional
 import os
 from dotenv import load_dotenv
 from twilio.rest import Client as TwilioClient
@@ -8,10 +9,15 @@ from twilio.twiml.voice_response import VoiceResponse
 
 
 class TwilioService:
+    _instance = None
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(TwilioService, cls).__new__(cls)
+        return cls._instance
 
-    @classmethod
-    def get_instance(cls) -> "TwilioService":
-        return cls()
+    # @classmethod
+    # def get_instance(cls) -> "TwilioService":
+    #     return cls()
 
     def __init__(
         self, user_number: str = None, account_sid: str = None, auth_token: str = None
@@ -66,6 +72,34 @@ class TwilioService:
             if openai_ws and openai_ws.state.value == 1:
                 await openai_ws.close()
 
+    # In TwilioService class
+    async def get_available_numbers(self, country_code="US", area_code=None, limit=20):
+        """Fetch available phone numbers with error handling"""
+        try:
+            params = {"limit": limit}
+            
+            # Run the Twilio API call in a separate thread to avoid blocking
+            numbers = await asyncio.to_thread(
+                lambda: self.client.available_phone_numbers(country_code).local.list(**params)
+            )
+            
+            # Format the response to include useful information
+            formatted_numbers = []
+            for number in numbers:
+                formatted_numbers.append({
+                    "phone_number": number.phone_number,
+                    "friendly_name": number.friendly_name,
+                    "capabilities": {
+                        "voice": number.capabilities.get("voice", False),
+                        "sms": number.capabilities.get("sms", False)
+                    }
+                })
+            
+            return formatted_numbers
+        except Exception as e:
+            print(f"Error fetching available numbers: {str(e)}")
+            return None
+        
     def transfer_call(self) -> None:
         """Transfer active call to user's number"""
         twilml = f"""
