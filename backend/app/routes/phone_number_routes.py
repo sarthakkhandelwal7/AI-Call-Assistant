@@ -47,4 +47,23 @@ async def get_available_numbers(
             status_code=500,
             content={"detail": f"Error fetching phone numbers: {str(e)}"}
         )
+
+@router.post("/buy-number")
+async def buy_number(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    twilio_service: TwilioService = Depends(TwilioService)
+):
+    try:
+        data = await request.json()
+        number = data.get("number")
+        resp = await twilio_service.buy_new_number(number)
+        return JSONResponse(content=resp, status_code=200)
+    except HTTPException as e:
+        print(f"HTTPException: {e.detail}")
+        return JSONResponse(
+            status_code=e.status_code,
+            content={"detail": e.detail}
+        )
+    
     

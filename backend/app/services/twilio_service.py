@@ -99,6 +99,21 @@ class TwilioService:
         except Exception as e:
             print(f"Error fetching available numbers: {str(e)}")
             return None
+    
+    async def buy_new_number(self, number):
+        try:
+            response = await asyncio.to_thread(
+                lambda: self.client.incoming_phone_numbers.create(phone_number=number)
+            )
+            formatted_response = {
+                "message": "Number purchased successfully",
+                "phone_number": response.phone_number,
+                "friendly_name": response.friendly_name,
+                **response.capabilities
+            }
+            return formatted_response
+        except Exception as e:
+            print(f"Error purchasing number: {str(e)}")
         
     def transfer_call(self) -> None:
         """Transfer active call to user's number"""
