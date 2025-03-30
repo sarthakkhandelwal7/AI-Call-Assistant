@@ -7,8 +7,7 @@ from typing import Optional
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
-from backend.app.services.calendar_service import CalendarService
-
+from backend.app.core import Settings
 
 class OpenAiService:
     LOG_EVENT_TYPES = [
@@ -22,10 +21,19 @@ class OpenAiService:
         "session.created",
     ]
 
-    events = None
     
-    @property
-    def PROMPT(self):
+        
+    def get_test_prompt(self) -> str:
+        return (
+            "You are Alex, an AI assistant. When a caller mentions transfer call, "
+            "immediately use the transfer_call tool if Sarthak is available. or caller asks to transfer call"
+            f"Current calendar: No events found for today."
+            "When a caller mentions nothing important or general call or send sms"
+            "or non-urgent matter, immediately use the schedule_call tool to send them a booking link."
+            "When you detect any mention of extended warranties, bitcoin investments, or user mentions prank call "
+            "or suspicious offers, immediately respond with a witty dismissal and use the hang_up tool."
+        )
+    def get_prompt(self, events: str) -> str:
         return (
             "You are a personal assistant named Alex with the following characteristics:\n"
             "- Intelligent and Perceptive: You possess an exceptional ability to read situations, often anticipating needs and outcomes before others do. Your insights are invaluable.\n"
@@ -58,7 +66,7 @@ class OpenAiService:
             "   - Never transfer calls if there's an ongoing event\n"
             "   - Default to sending booking link if events cannot be checked\n\n"
             
-            f"Current Calendar Status: {self.events}\n\n"
+            f"Current Calendar Status: {events}\n\n"
             
             "Transfer Criteria:\n"
             "- 'very' importance: Transfer only if Sarthak is available (no current event)\n"
@@ -81,38 +89,33 @@ class OpenAiService:
             "3. Always use appropriate tool (hang_up, schedule_call, or transfer_call) to end interaction\n"
         )
 
-    def __init__(self, twilio_service, events=None):
-        self.twilio_service = twilio_service
-        self.events = events
+    def __init__(self, settings: Settings, twilio_service) -> None:
+        self.twilio_service = twilio_service 
+        self.settings = settings
 
-    @classmethod
-    async def create(cls) -> "OpenAiService":
-        """Factory method for creating and initializing the service"""
-        instance = cls()
-        await instance.connect()
-        return instance
-
-    async def connect(self) -> None:
+    async def connect(self) -> websockets.WebSocketClientProtocol:
         """Establish WebSocket connection with OpenAI"""
-        load_dotenv()
-        self._ws = await websockets.connect(
+        ws = await websockets.connect(
             "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
             additional_headers={
-                "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
+                "Authorization": f"Bearer {self.settings.OPENAI_API_KEY}",
                 "OpenAI-Beta": "realtime=v1",
             },
         )
+        return ws
 
     async def start_session(
         self,
+        ws: Optional[websockets.WebSocketClientProtocol],
         voice="alloy",
         input_audio_format="g711_ulaw",
         output_audio_format="g711_ulaw",
         temperature=0.8,
         modalities=["text", "audio"],
+        events: str = "No events found for today.",
     ) -> None:
         """Initialize session with OpenAI"""
-        if not self._ws:
+        if not ws:
             raise RuntimeError("WebSocket connection not established")
         
         session_update = {
@@ -124,7 +127,9 @@ class OpenAiService:
                 "output_audio_format": output_audio_format,
                 "temperature": temperature,
                 "modalities": modalities,
-                "instructions": self.PROMPT,
+                # "instructions": self.get_prompt(events),
+                "instructions": self.get_test_prompt(),
+                
                 "tools": [
                     {
                         "type": "function",
@@ -144,12 +149,12 @@ class OpenAiService:
                 ],
             },
         }
-        await self._ws.send(json.dumps(session_update))
-        await self.send_initial_conversation_item()
+        await ws.send(json.dumps(session_update))
+        await self.send_initial_conversation_item(ws)
 
-    async def send_initial_conversation_item(self) -> None:
+    async def send_initial_conversation_item(self, ws) -> None:
         """Send initial conversation item if AI talks first."""
-        if not self._ws:
+        if not ws:
             raise RuntimeError("WebSocket connection not established")
 
         initial_conversation_item = {
@@ -160,33 +165,35 @@ class OpenAiService:
                 "content": [
                     {
                         "type": "input_text",
-                        "text": "Greet the user with 'Hello, I am Alex an AI voice assistant I handle all communications and scheduling for Sarthak. How can I assist you today?'",
+                        # "text": "Greet the user with 'Hello, I am Alex an AI voice assistant I handle all communications and scheduling for Sarthak. How can I assist you today?'",
+                        "text": "Greet the user with 'Hello, I am Alex an AI voice assistant. How can I assist you today?'",
                     }
                 ],
             },
         }
-        await self._ws.send(json.dumps(initial_conversation_item))
-        await self._ws.send(json.dumps({"type": "response.create"}))
+        await ws.send(json.dumps(initial_conversation_item))
+        await ws.send(json.dumps({"type": "response.create"}))
 
-    async def receive_audio(self) -> None:
+    async def receive_audio(self, session) -> None:
         """Receive audio stream from OpenAI and send it to Twilio"""
-        if not self._ws:
+        
+        if not session.openai_ws:
             raise RuntimeError("WebSocket connection not established")
 
         function_name = None
         try:
-            async for message in self._ws:
+            async for message in session.openai_ws:
                 data = json.loads(message)
                 # if data["type"] in self.LOG_EVENT_TYPES:
                 #     print(f"Received event: {data['type']}", data)
 
                 # Save JSON data to responses folder
-                file_name = data.get("type", "unknown").replace(".", "_") + ".json"
+                # file_name = data.get("type", "unknown").replace(".", "_") + ".json"
 
                 # file_path = os.path.join("responses", file_name)
 
-                with open(f"responses/{file_name}", "w") as file:
-                    json.dump(data, file, indent=4)
+                # with open(f"responses/{file_name}", "w") as file:
+                #     json.dump(data, file, indent=4)
                 
                 if "error" in data:
                     print(f"Error: {data['error']}")
@@ -196,10 +203,10 @@ class OpenAiService:
 
                     response_audio = {
                         "event": "media",
-                        "streamSid": self.twilio_service.stream_sid,
+                        "streamSid": session.stream_sid,
                         "media": {"payload": data["delta"]},
                     }
-                    await self.twilio_service.ws.send_json(response_audio)
+                    await session.twilio_ws.send_json(response_audio)
 
                 if data.get("type") == "response.function_call_arguments.done":
                     # Not menthiioned in the api docs but it containes a name key
@@ -207,28 +214,13 @@ class OpenAiService:
 
                 if data.get("type") == "response.done":
                     if function_name == "hang_up":
-                        self.twilio_service.end_call()
+                        self.twilio_service.end_call(session.call_sid)
 
                     elif function_name == "schedule_call":
-                        self.twilio_service.send_sms(None, None)
+                        self.twilio_service.send_sms(session.user.user_number, session.from_number, session.user.full_name, session.user.calendar_url)
 
                     elif function_name == "transfer_call":
-                        self.twilio_service.transfer_call()
+                        self.twilio_service.transfer_call(session.call_sid, session.user.user_number)
 
         except Exception as e:
-            print(f"Error receiving audio: {e}")
-
-    async def close(self) -> None:
-        """Close the WebSocket connection"""
-        if self._ws:
-            await self._ws.close()
-            self._ws = None
-            print("OpenAI WebSocket connection closed")
-
-    async def __aenter__(self) -> "OpenAiService":
-        await self.connect()
-        await self.start_session()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        await self.close()
+            print(f"Error receiving audio in openai: {e}")
