@@ -32,6 +32,10 @@ class TwilioService:
         try:
             async for message in twilio_ws.iter_text():
                 data = json.loads(message)
+                
+                if data["event"] == "stop":
+                    print("Closed Message received", message)
+                    break
 
                 if data["event"] == "media" and openai_ws.state.value == 1:
                     payload = {
@@ -39,17 +43,11 @@ class TwilioService:
                         "audio": data["media"]["payload"],
                     }
                     await openai_ws.send(json.dumps(payload))
-
-                if data["event"] == "stop":
-                    print("Closed Message received", message)
-                    break
+                
 
         except Exception as e:
             print(f"Error receiving audio in twilio: {e}")
         
-        finally:
-            if openai_ws and openai_ws.state.value == 1:
-                await openai_ws.close()
 
     # In TwilioService class
     async def get_available_numbers(self, country_code="US", area_code=None, limit=20):

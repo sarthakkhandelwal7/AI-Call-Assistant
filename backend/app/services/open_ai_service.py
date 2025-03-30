@@ -186,6 +186,9 @@ class OpenAiService:
             async for message in session.openai_ws:
                 data = json.loads(message)
                 
+                if session.openai_ws and session.openai_ws.state.value != 1:
+                    break
+                
                 if "error" in data:
                     print(f"Error: {data['error']}")
                     raise Exception(data["error"])
@@ -206,12 +209,15 @@ class OpenAiService:
                 if data.get("type") == "response.done":
                     if function_name == "hang_up":
                         self.twilio_service.end_call(session.call_sid)
+                        break
 
                     elif function_name == "schedule_call":
                         self.twilio_service.send_sms(session.user.user_number, session.from_number, session.user.full_name, session.user.calendar_url)
+                        
 
                     elif function_name == "transfer_call":
                         self.twilio_service.transfer_call(session.call_sid, session.user.user_number)
+                        break
 
         except Exception as e:
             print(f"Error receiving audio in openai: {e}")

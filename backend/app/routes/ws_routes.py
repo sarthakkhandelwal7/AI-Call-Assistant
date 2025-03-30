@@ -55,8 +55,9 @@ async def websocket_endpoint(
         print(f"Error in websocket endpoint: {e}")
 
     finally:
-        await ws.close()
-        print("WebSocket connection closed")
+        if ws.application_state.value == 1:
+            await ws.close()
+        print("All WebSockets connections are closed")
 
 
 router.add_api_websocket_route("/audio-stream", websocket_endpoint)
