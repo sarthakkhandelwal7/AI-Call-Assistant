@@ -48,9 +48,7 @@ async def websocket_endpoint(
             
             await asyncio.gather(
                 twilio_service.receive_audio(twilio_ws=session.twilio_ws, openai_ws=session.openai_ws),
-                openai_service.receive_audio(openai_ws=session.openai_ws, 
-                                             twilio_ws=session.twilio_ws, 
-                                             stream_sid=session.stream_sid),
+                openai_service.receive_audio(session)
             )
 
     except Exception as e:

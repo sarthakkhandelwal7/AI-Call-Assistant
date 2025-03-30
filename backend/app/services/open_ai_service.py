@@ -33,6 +33,7 @@ class OpenAiService:
             "When you detect any mention of extended warranties, bitcoin investments, or user mentions prank call "
             "or suspicious offers, immediately respond with a witty dismissal and use the hang_up tool."
         )
+        
     def get_prompt(self, events: str) -> str:
         return (
             "You are a personal assistant named Alex with the following characteristics:\n"
@@ -184,16 +185,6 @@ class OpenAiService:
         try:
             async for message in session.openai_ws:
                 data = json.loads(message)
-                # if data["type"] in self.LOG_EVENT_TYPES:
-                #     print(f"Received event: {data['type']}", data)
-
-                # Save JSON data to responses folder
-                # file_name = data.get("type", "unknown").replace(".", "_") + ".json"
-
-                # file_path = os.path.join("responses", file_name)
-
-                # with open(f"responses/{file_name}", "w") as file:
-                #     json.dump(data, file, indent=4)
                 
                 if "error" in data:
                     print(f"Error: {data['error']}")
