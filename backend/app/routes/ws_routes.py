@@ -15,7 +15,7 @@ from app.utils.calendar_events import get_calendar_events
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.sessions.user_sessions import sessions
 from app.services import get_twilio_service, get_open_ai_service
-from backend.app.models import user
+from app.models import user
 
 router = APIRouter()
 
@@ -55,6 +55,7 @@ async def websocket_endpoint(
         print(f"Error in websocket endpoint: {e}")
 
     finally:
+        # ws.state.value == 1 wont work as application gets disconnected so have to check application_state.value
         if ws.application_state.value == 1:
             await ws.close()
         print("All WebSockets connections are closed")

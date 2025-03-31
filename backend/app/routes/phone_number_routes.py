@@ -9,7 +9,7 @@ from app.middleware.security import verify_token_middleware
 from app.models.user import User
 from app.models.phone_number import BuyNumberRequest, BuyNumberResponse
 from app.services.twilio_service import TwilioService
-from backend.app.services.auth_service import AuthService
+from app.services.auth_service import AuthService
 from app.services import get_twilio_service
 import logging
 

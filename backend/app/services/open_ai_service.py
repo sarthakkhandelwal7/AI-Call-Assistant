@@ -7,7 +7,7 @@ from typing import Optional
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
-from backend.app.core import Settings
+from app.core import Settings
 
 class OpenAiService:
     LOG_EVENT_TYPES = [
