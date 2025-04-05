@@ -1,12 +1,10 @@
 from typing import Dict
 import uuid
-from requests import session
-import starlette
-from app.models.user import UserResponse
+from app.models.user import User
 
 class UserSession:
     def __init__(self, user_id: uuid.UUID, 
-                 user: UserResponse,
+                 user: User,
                  from_number: str, 
                  twilio_ws=None, 
                  openai_ws=None):
@@ -27,11 +25,16 @@ class UserSession:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.twilio_ws.close()
-        print(f"Closed Twilio connection for user {self.user_id}")
-        await self.openai_ws.close()
-        print(f"Closed OpenAI connection for user {self.user_id}")
-        del sessions[self.user_id]
+        if self.twilio_ws:
+            await self.twilio_ws.close()
+            print(f"Closed Twilio connection for user {self.user_id}")
+        
+        if self.openai_ws:
+            await self.openai_ws.close()
+            print(f"Closed OpenAI connection for user {self.user_id}")
+        
+        if self.user_id in sessions:
+            del sessions[self.user_id]
 
 
 sessions: Dict[uuid.UUID, UserSession] = {}

@@ -1,5 +1,6 @@
 from attr import frozen
 from pydantic_settings import BaseSettings
+import os
 
 
 class Settings(BaseSettings):
@@ -14,7 +15,22 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET_KEY: str
     
+    # Database connection pool settings
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
+    
     class Config:
-        env_file = ".env"
+        # Get environment from APP_ENV variable, default to development
+        env = os.getenv("APP_ENV", "dev")
+        
+        # Use different .env files based on environment
+        env_file = f".env.{env}"
+        
+        # Fall back to .env if the specific file doesn't exist
+        if not os.path.isfile(env_file):
+            env_file = ".env"
+            
         frozen = True  # Make the settings immutable after initialization
 
