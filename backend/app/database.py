@@ -14,7 +14,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("database")
 
 # Load environment variables
-load_dotenv()
 
 # Get settings
 settings = Settings()

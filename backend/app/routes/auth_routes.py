@@ -6,12 +6,14 @@ from app.models.user import User
 from app.models.login import GoogleLoginRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+import logging
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 auth_service = AuthService()
 
-from fastapi import Body  # Add this import
+from fastapi import Body
 
 @router.post("/google-login")
 async def google_auth(
@@ -119,6 +121,7 @@ async def get_current_user(
             "timezone": user.timezone,
             "twilio_number": user.twilio_number,
             "user_number": user.user_number,
+            "calendar_url": user.calendar_url,
         }
     except Exception as e:
         print(f"Get User Info Error: {type(e).__name__}: {str(e)}")

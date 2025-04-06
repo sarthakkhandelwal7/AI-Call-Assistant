@@ -1,0 +1,16 @@
+# Ignore node_modules folder
+node_modules
+
+# Ignore build artifacts
+build
+dist
+
+# Ignore .env files (handled by Docker Compose env_file or environment)
+.env*
+
+# Ignore logs and local config
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.local 

@@ -1,11 +1,8 @@
 import base64
 import json
 import os
-from fastapi import Depends
 import websockets
 from typing import Optional
-from contextlib import asynccontextmanager
-from dotenv import load_dotenv
 
 from app.core import Settings
 
@@ -108,6 +105,7 @@ class OpenAiService:
     async def start_session(
         self,
         ws: Optional[websockets.WebSocketClientProtocol],
+        name: str,
         voice="alloy",
         input_audio_format="g711_ulaw",
         output_audio_format="g711_ulaw",
@@ -128,8 +126,8 @@ class OpenAiService:
                 "output_audio_format": output_audio_format,
                 "temperature": temperature,
                 "modalities": modalities,
-                # "instructions": self.get_prompt(events),
-                "instructions": self.get_test_prompt(),
+                "instructions": self.get_prompt(events),
+                # "instructions": self.get_test_prompt(),
                 
                 "tools": [
                     {
@@ -151,9 +149,9 @@ class OpenAiService:
             },
         }
         await ws.send(json.dumps(session_update))
-        await self.send_initial_conversation_item(ws)
+        await self.send_initial_conversation_item(ws, name)
 
-    async def send_initial_conversation_item(self, ws) -> None:
+    async def send_initial_conversation_item(self, ws, name) -> None:
         """Send initial conversation item if AI talks first."""
         if not ws:
             raise RuntimeError("WebSocket connection not established")
@@ -166,8 +164,8 @@ class OpenAiService:
                 "content": [
                     {
                         "type": "input_text",
-                        # "text": "Greet the user with 'Hello, I am Alex an AI voice assistant I handle all communications and scheduling for Sarthak. How can I assist you today?'",
-                        "text": "Greet the user with 'Hello, I am Alex an AI voice assistant. How can I assist you today?'",
+                        "text": f"Greet the user with 'Hello, I am Alex an AI voice assistant I handle all communications and scheduling for {name}. How can I assist you today?'",
+                        # "text": "Greet the user with 'Hello, I am Alex an AI voice assistant. How can I assist you today?'",
                     }
                 ],
             },

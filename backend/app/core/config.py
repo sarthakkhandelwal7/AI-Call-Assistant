@@ -1,19 +1,29 @@
 from attr import frozen
 from pydantic_settings import BaseSettings
+from pydantic import Field
 import os
 
 
 class Settings(BaseSettings):
     """Settings for the application."""
+    # Required API Keys and URLs
     OPENAI_API_KEY: str
     TWILIO_ACCOUNT_SID: str
     TWILIO_AUTH_TOKEN: str
+    TWILIO_VERIFY_SERVICE_SID: str
     STREAM_URL: str
     FRONTEND_URL: str
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     DATABASE_URL: str
     JWT_SECRET_KEY: str
+    
+    # Optional/Dev specific - Make these optional with defaults
+    TWILIO_PHONE_NUMBER: str | None = None
+    HARVEY_PHONE_NUMBER: str | None = None
+    CALENDLY_URL: str | None = None
+    DEBUG: bool = False
+    LOG_LEVEL: str = "info"
     
     # Database connection pool settings
     DB_POOL_SIZE: int = 10
