@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import uuid
 import jwt
 import secrets
 from fastapi import HTTPException, status, Request
@@ -9,7 +10,7 @@ import requests
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from app.models.user import User, UserCreate
+from app.models.user import User, UserResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -21,7 +22,7 @@ class AuthService:
         self.google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
         self.jwt_secret = os.getenv("JWT_SECRET_KEY")
         self.jwt_algorithm = "HS256"
-        self.access_token_expire_minutes = 30
+        self.access_token_expire_minutes = 120
         self.refresh_token_expire_days = 30
 
     async def _get_user_timezone(self, refresh_token: str) -> str:
@@ -42,11 +43,14 @@ class AuthService:
             return 'UTC'
 
     def _generate_fingerprint(self, request: Request) -> str:
-        """Generate unique fingerprint based on request metadata"""
-        fingerprint_data = f"{request.client.host}:{request.headers.get('user-agent')}:{request.headers.get('accept-language')}"
+        """Generate unique fingerprint based on request metadata (excluding host)"""
+        # Exclude request.client.host as it's unreliable behind proxies/Docker
+        user_agent = request.headers.get('user-agent', 'unknown')
+        accept_language = request.headers.get('accept-language', 'unknown')
+        fingerprint_data = f"{user_agent}:{accept_language}" 
         return hashlib.sha256(fingerprint_data.encode()).hexdigest()
 
-    def create_access_token(self, user_id: int, request: Request) -> tuple[str, datetime]:
+    def create_access_token(self, user_id: uuid.UUID, request: Request) -> tuple[str, datetime]:
         """Create access token with fingerprint"""
         expires = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         
@@ -63,7 +67,7 @@ class AuthService:
         token = jwt.encode(payload, self.jwt_secret, algorithm=self.jwt_algorithm)
         return token, expires, csrf_token
 
-    def verify_token(self, token: str, request: Request, csrf_token: str = None) -> int:
+    def verify_token(self, token: str, request: Request, csrf_token: str = None) -> uuid.UUID:
         """Verify JWT token with fingerprint and CSRF token"""
         try:
             payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
@@ -81,17 +85,13 @@ class AuthService:
                     detail="Invalid CSRF token"
                 )
             
-            return int(payload["sub"])
+            return uuid.UUID(payload["sub"])
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
-        except jwt.JWTError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
-            )
+
     
     async def verify_google_token(self, token: str) -> dict:
         try:

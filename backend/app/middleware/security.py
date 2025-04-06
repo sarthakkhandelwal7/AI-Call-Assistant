@@ -1,12 +1,10 @@
-from fastapi import Request, HTTPException, status
+import logging
+from fastapi import Depends, Request, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 from typing import Optional
 import time
 from app.services.auth_service import AuthService
-
-security = HTTPBearer()
-auth_service = AuthService()
 
 class SecurityMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
@@ -14,24 +12,34 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.rate_limit_window = 60  # 1 minute
         self.max_requests = 100  # requests per minute
         self._requests = {}
+        self.logger = logging.getLogger("SecurityMiddleware")
 
     async def dispatch(self, request: Request, call_next):
-        # Rate limiting
-        await self._check_rate_limit(request)
-        
-        # Process the request and get response
-        response = await call_next(request)
-        
-        # Add security headers
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        
-        return response
+        try:
+            # Rate limiting
+            self.logger.info("Checking rate limit for request.")
+            await self._check_rate_limit(request)
+            
+            # Process the request and get response
+            self.logger.info("Processing request through call_next.")
+            response = await call_next(request)
+            
+            # Add security headers
+            self.logger.info("Adding security headers to response.")
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            
+            return response
+        except Exception as e:
+            self.logger.error(f"Error in SecurityMiddleware: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An internal error occurred."
+            )
 
     async def _check_rate_limit(self, request: Request):
-        # Rate limiting implementation
         client_ip = request.client.host
         current_time = time.time()
         
@@ -64,17 +72,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
 async def verify_token_middleware(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = security
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer),
+    auth_service: AuthService = Depends(AuthService)
 ) -> Optional[str]:
     """Verify access token from cookie or Authorization header"""
     try:
         # First try to get token from cookie
         token = request.cookies.get("access_token")
         
+        
         # If no cookie, check Authorization header
         if not token and credentials:
             token = credentials.credentials
-            
+        
+        
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -87,6 +98,7 @@ async def verify_token_middleware(
         
         return token
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)

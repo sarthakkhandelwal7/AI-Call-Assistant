@@ -4,11 +4,10 @@ from googleapiclient.errors import HttpError
 import datetime
 import pytz
 import os
-from typing import Optional, Union
 from app.models.user import User
 
 
-async def get_calendar_events(user: User) -> Union[str, list]:
+async def get_calendar_events(user: User) -> str:
     """
     Get today's calendar events using user's stored credentials and timezone
     

@@ -4,6 +4,8 @@ services:
         build:
             context: ./frontend
             dockerfile: Dockerfile
+            args:
+                REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
         volumes:
             - ./frontend:/app
             - /app/node_modules
@@ -12,8 +14,31 @@ services:
         environment:
             - CHOKIDAR_USEPOLLING=true
             - WATCHPACK_POLLING=true
-            - WDS_SOCKET_PORT=3001
+            - WDS_SOCKET_PORT=3500
+            - APP_ENV=${APP_ENV:-dev}
         command: npm start
+
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        volumes:
+            - ./backend:/app
+        ports:
+            - "8000:8000"
+        depends_on:
+            - db
+        env_file:
+            - ./backend/.env.${APP_ENV:-dev}
+        environment:
+            - APP_ENV=${APP_ENV:-dev}
+        restart: unless-stopped
+        command: >
+            sh -c "
+            echo 'Waiting for database to be ready...' &&
+            sleep 5 &&
+            uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+            "
 
     db:
         image: postgres:alpine
@@ -22,7 +47,7 @@ services:
         environment:
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=postgres
-            - POSTGRES_DB=ai_secretary
+            - POSTGRES_DB=ai_secretary${APP_ENV:-dev}
         volumes:
             - postgres_data:/var/lib/postgresql/data
 
@@ -33,8 +58,8 @@ services:
         environment:
             - PGADMIN_DEFAULT_EMAIL=admin@admin.com
             - PGADMIN_DEFAULT_PASSWORD=admin
-            - PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False # Add this line
-            - PGADMIN_CONFIG_CONSOLE_LOG_LEVEL=10 # Optional: for more debugging info
+            - PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False
+            - PGADMIN_CONFIG_CONSOLE_LOG_LEVEL=10
         volumes:
             - pgadmin_data:/var/lib/pgadmin
         depends_on:
