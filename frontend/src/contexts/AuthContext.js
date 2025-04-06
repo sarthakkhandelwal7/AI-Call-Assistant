@@ -1,6 +1,4 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { authAPI } from '../services/api';
-import { userAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -39,6 +37,25 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const updateUserProfile = useCallback(async (updates) => {
+        try {
+            const response = await makeAuthenticatedRequest(
+                'http://localhost:8000/auth/update-profile',
+                {
+                    method: 'POST',
+                    body: JSON.stringify(updates)
+                }
+            );
+            
+            const updatedUser = await response.json();
+            setUser(updatedUser);
+            return updatedUser;
+        } catch (err) {
+            console.error('Update profile error:', err);
+            throw err;
+        }
+    }, [makeAuthenticatedRequest]);
+
     const checkAuth = useCallback(async () => {
         try {
             const response = await makeAuthenticatedRequest(
@@ -54,17 +71,6 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         }
     }, [makeAuthenticatedRequest]);
-
-    const updateUserProfile = useCallback(async (updates) => {
-        try {
-            const updatedUser = await userAPI.updateProfile(updates);
-            setUser(updatedUser);
-            return updatedUser;
-        } catch (err) {
-            console.error('Update profile error:', err);
-            throw err;
-        }
-    }, []);
 
     const login = useCallback(async (googleResponse) => {
         try {

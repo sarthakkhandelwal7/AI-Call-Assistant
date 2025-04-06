@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { Shield, Phone } from 'lucide-react';
+import { Shield, Calendar, Phone, Bell } from 'lucide-react';
 import { Card } from '../../common/ui';
 import { TabGroup } from '../../common/ui';
 import { ProfileHeader } from '../ProfileHeader';
 import { ProfileInfo } from './ProfileInfo';
+import { CalendarSettings } from './CalendarSettings';
 import { CallSettings } from './CallSettings';
+import { NotificationSettings } from './NotificationSettings';
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: <Shield className="w-5 h-5" /> },
+  { id: 'calendar', label: 'Calendar', icon: <Calendar className="w-5 h-5" /> },
   { id: 'calls', label: 'Call Settings', icon: <Phone className="w-5 h-5" /> },
+  { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" /> }
 ];
 
 const TAB_COMPONENTS = {
   profile: ProfileInfo,
+  calendar: CalendarSettings,
   calls: CallSettings,
+  notifications: NotificationSettings
 };
 
 const ProfilePage = () => {
@@ -32,7 +38,7 @@ const ProfilePage = () => {
           />
         </div>
         <div className="p-6">
-          {TabComponent ? <TabComponent /> : <div>Select a tab</div>}
+          <TabComponent />
         </div>
       </Card>
     </div>

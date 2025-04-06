@@ -71,8 +71,7 @@ python tests/stress_tests/run_tests.py --test-type http_basic -v
 
 **Example**:
 
-    ```bash
-
+```bash
 python tests/stress_tests/run_tests.py --test-type throughput --num-calls 5 --duration 10 -v
 ```
 

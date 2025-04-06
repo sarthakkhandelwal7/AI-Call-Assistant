@@ -38,7 +38,6 @@ async def websocket_endpoint(
             # Get the user ID from the WebSocket
             user_id = await twilio_service.fetch_user_id(ws)
             session = sessions.get(user_id, None)
-            first_name = session.user.full_name.split(" ")[0]
             if session is None:
                 await ws.close()
                 raise Exception("Session not found")
@@ -51,7 +50,7 @@ async def websocket_endpoint(
                 session.openai_ws = await openai_service.connect()
                             
                 session.calendar_events = await get_calendar_events(session.user)
-                await openai_service.start_session(ws=session.openai_ws, events=session.calendar_events, name=first_name)
+                await openai_service.start_session(ws=session.openai_ws, events=session.calendar_events)
                 
                 await asyncio.gather(
                     twilio_service.receive_audio(twilio_ws=session.twilio_ws, openai_ws=session.openai_ws),

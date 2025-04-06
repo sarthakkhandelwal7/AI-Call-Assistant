@@ -79,6 +79,7 @@ async def verify_token_middleware(
     try:
         # First try to get token from cookie
         token = request.cookies.get("access_token")
+        print(f"Token from cookie: {token}")
         
         
         # If no cookie, check Authorization header
@@ -103,3 +104,12 @@ async def verify_token_middleware(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)
         )
+
+# async def verify_token_middleware2(
+#     request: Request,
+#     credentials: HTTPAuthorizationCredentials = Depends(security)
+# ):
+#     """Dummy middleware for token verification"""
+#     # This is just a placeholder. Actual implementation should be done in the routes.
+#     token = request.cookies.get("access_token")
+#     print(f"Token from cookie: {token}")

@@ -43,11 +43,8 @@ class AuthService:
             return 'UTC'
 
     def _generate_fingerprint(self, request: Request) -> str:
-        """Generate unique fingerprint based on request metadata (excluding host)"""
-        # Exclude request.client.host as it's unreliable behind proxies/Docker
-        user_agent = request.headers.get('user-agent', 'unknown')
-        accept_language = request.headers.get('accept-language', 'unknown')
-        fingerprint_data = f"{user_agent}:{accept_language}" 
+        """Generate unique fingerprint based on request metadata"""
+        fingerprint_data = f"{request.client.host}:{request.headers.get('user-agent')}:{request.headers.get('accept-language')}"
         return hashlib.sha256(fingerprint_data.encode()).hexdigest()
 
     def create_access_token(self, user_id: uuid.UUID, request: Request) -> tuple[str, datetime]:

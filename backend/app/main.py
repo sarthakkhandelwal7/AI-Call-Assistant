@@ -3,7 +3,7 @@ import time
 # from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import call_routes, ws_routes, auth_routes, phone_number_routes, health_status, user_routes, verify_routes
+from app.routes import call_routes, ws_routes, auth_routes, phone_number_routes, health_status
 from app.middleware.security import SecurityMiddleware
 from app.core import get_settings
 import logging
@@ -12,6 +12,12 @@ from app.logging_config import configure_logging
 # Configure logging first
 configure_logging()
 logger = logging.getLogger(__name__)
+
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     print("✅ AI Secretary API is starting")
+#     yield
+#     print("🛑 AI Secretary API is shutting down")
 
 
 def create_app():
@@ -43,8 +49,6 @@ def create_app():
     app.include_router(health_status.router)
     app.include_router(ws_routes.router)
     app.include_router(phone_number_routes.router)
-    app.include_router(user_routes.router)
-    app.include_router(verify_routes.router)
 
     @app.middleware("http")
     async def log_requests(request: Request, call_next):

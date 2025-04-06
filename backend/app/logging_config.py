@@ -31,14 +31,12 @@ def configure_logging():
                 "formatter": "detailed",
                 "level": "DEBUG",
                 "filename": "app.log",
-                "encoding": "utf-8",
             },
             "database_file": {
                 "class": "logging.FileHandler",
                 "formatter": "detailed",
                 "level": "DEBUG",
                 "filename": "database.log",
-                "encoding": "utf-8",
             },
         },
         "loggers": {
