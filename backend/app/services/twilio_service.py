@@ -1,23 +1,21 @@
 import asyncio
 import json
+from turtle import st
 import uuid
-import logging
-import os
+from venv import logger
 from fastapi import WebSocket
 from openai import BadRequestError
 from twilio.rest import Client as TwilioClient
 from app.sessions.user_sessions import sessions
 from app.core import Settings
 
-logger = logging.getLogger(__name__)
-
 class TwilioService:
     def __init__(self, settings: Settings):
         self.client = TwilioClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)       
+        
 
     async def fetch_user_id(self, ws: WebSocket) -> int:
         """Wait for initial message to get stream_sid"""
-        # Wait for the start event
         while True:
             message = await ws.receive_text()
             data = json.loads(message)
@@ -56,10 +54,6 @@ class TwilioService:
         """Fetch available phone numbers with error handling"""
         try:
             params = {"limit": limit}
-            
-            # Add area code filter if provided
-            if area_code and area_code.isdigit() and len(area_code) == 3:
-                params["area_code"] = area_code
             
             # Run the Twilio API call in a separate thread to avoid blocking
             numbers = await asyncio.to_thread(

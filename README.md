@@ -49,39 +49,7 @@ An intelligent call screening system. This AI secretary uses natural language pr
 -   OpenAI API access
 -   Google Cloud project with Calendar API enabled
 
-### Environment Setup
-
-The application supports three environments:
-
--   `dev` - Development environment (default)
--   `test` - Testing environment
--   `prod` - Production environment
-
-To switch between environments, use the provided script:
-
-```bash
-# Give execute permission (first time only)
-chmod +x switch-env.sh
-
-# Switch to development environment
-./switch-env.sh dev
-
-# Switch to testing environment
-./switch-env.sh test
-
-# Switch to production environment
-./switch-env.sh prod
-```
-
-Each environment uses its own:
-
--   Configuration file (.env.dev, .env.test, .env.prod)
--   Database (ai_secretarydev, ai_secretarytest, ai_secretaryprod)
--   Settings appropriate for the environment
-
 ### Environment Variables
-
-Create environment-specific .env files with the following variables:
 
 ```env
 TWILIO_ACCOUNT_SID=your_account_sid
@@ -114,7 +82,7 @@ GOOGLE_CLIENT_SECRET=
 
     - Create a project in the Google Cloud Console
     - Enable Calendar API
-    - Go to Credentials and generate OAuth 2.0 credentials
+    - Go to Credentials and generate OAuth 2.0 credentials 
     - Save GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env
     - Register http://localhost:3001 or your frontend uri in Authorized JavaScript origins
 
@@ -125,7 +93,7 @@ GOOGLE_CLIENT_SECRET=
 5. Run the docker-compose file to run the front end in a docker container.
     - Frontend URL: http://localhost:3001
     - You can register your Google Calander to fetch events
-
+   
 ## API Endpoints
 
 ### Call Management
@@ -158,23 +126,6 @@ GOOGLE_CLIENT_SECRET=
 poetry run pytest
 ```
 
-### Stress Testing
-
-The application includes a comprehensive stress testing framework to evaluate performance under various load conditions. These tests ensure the system can handle real-world call volumes and maintain reliability.
-
-Available test types:
-
--   HTTP Basic Test
--   Throughput Test
--   Resilience Test
--   Load Test
--   High Concurrency Test
--   Wave Pattern Test
--   Burst Pattern Test
--   Stability Test
-
-For detailed documentation on running stress tests and interpreting results, see the [Stress Testing Documentation](backend/tests/stress_tests/README.md).
-
 ### Local Development
 
 1. Use ngrok for Twilio webhook:
@@ -191,5 +142,4 @@ For detailed documentation on running stress tests and interpreting results, see
     ```
 
 ### Acknowledgments
-
 This project draws inspiration from [donna](https://github.com/raviriley/donna). It is a valuable reference while exploring and enhancing capabilities in building applications powered by LLMs like ChatGPT.
