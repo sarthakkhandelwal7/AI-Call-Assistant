@@ -7,22 +7,28 @@ services:
             args:
                 REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
         volumes:
+            # For development, we might still want to mount the source code
+            # But be aware this won't reflect in the Nginx served files without a rebuild
             - ./frontend:/app
             - /app/node_modules
+            - /app/build # Prevent local build from overwriting container build
         ports:
-            - "3001:3000"
-        environment:
-            - CHOKIDAR_USEPOLLING=true
-            - WATCHPACK_POLLING=true
-            - WDS_SOCKET_PORT=3500
-            - APP_ENV=${APP_ENV:-dev}
-        command: npm start
+            - "3001:80" # Map host 3001 to container Nginx port 80
+        # Remove environment variables related to react-scripts start
+        # environment:
+        #     - CHOKIDAR_USEPOLLING=true
+        #     - WATCHPACK_POLLING=true
+        #     - WDS_SOCKET_PORT=3500
+        #     - APP_ENV=${APP_ENV:-dev}
+        # Remove command, rely on Dockerfile CMD
+        # command: npm start
 
     backend:
         build:
             context: ./backend
             dockerfile: Dockerfile
         volumes:
+            # Keep volume for development, but it won't be in production image
             - ./backend:/app
         ports:
             - "8000:8000"
@@ -33,12 +39,6 @@ services:
         environment:
             - APP_ENV=${APP_ENV:-dev}
         restart: unless-stopped
-        command: >
-            sh -c "
-            echo 'Waiting for database to be ready...' &&
-            sleep 5 &&
-            uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-            "
 
     db:
         image: postgres:alpine

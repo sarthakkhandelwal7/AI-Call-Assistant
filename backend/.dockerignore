@@ -1,0 +1,39 @@
+# Docker Build Context Exclusions
+
+# Git history
+.git
+
+# Dockerfile itself
+Dockerfile
+
+# Python virtual environment
+.venv
+env
+venv
+
+# Python cache/compiled files
+__pycache__/
+*.py[cod]
+*.so
+
+# Tests folder
+tests/
+
+# Documentation (Optional)
+README.md
+
+# Environment files
+.env*
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Alembic (if migrations run outside image build)
+# alembic/
+# alembic.ini 

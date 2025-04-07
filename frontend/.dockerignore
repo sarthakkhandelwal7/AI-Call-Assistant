@@ -1,3 +1,19 @@
+# Docker Build Context Exclusions
+
+# Git history
+.git
+
+# Dockerfile itself
+Dockerfile
+
+# Tests
+src/**/*.test.js
+src/**/*.spec.js
+
+# Documentation (Optional)
+README.md
+
+# Existing ignores:
 # Ignore node_modules folder
 node_modules
 

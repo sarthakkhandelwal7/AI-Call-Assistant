@@ -53,13 +53,8 @@ credentials.json
 tmp/
 temp/
 .python-version
-project-plan.md
 
 # Directory
 Design-Dock/
 credentials/
 responses/
-
-# Database
-alembic/
-alembic.ini
