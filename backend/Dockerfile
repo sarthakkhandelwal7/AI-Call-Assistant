@@ -67,10 +67,8 @@ COPY --from=builder /app /app
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Production CMD: Use gunicorn or uvicorn without reload
-# Using Gunicorn as a robust production server
-# Adjust workers based on CPU cores (e.g., (2 * $CPU_CORES) + 1)
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "-b", "0.0.0.0:8000", "app.main:app"]
+# Production CMD: Run migrations then start Gunicorn
+CMD alembic upgrade head && gunicorn -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 app.main:app
 
 # Alternative CMD using Uvicorn directly (simpler, may be sufficient)
 # CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 

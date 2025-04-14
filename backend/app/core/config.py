@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str
     TWILIO_AUTH_TOKEN: str
     TWILIO_VERIFY_SERVICE_SID: str
-    STREAM_URL: str
     FRONTEND_URL: str
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
@@ -19,9 +18,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     
     # Optional/Dev specific - Make these optional with defaults
-    TWILIO_PHONE_NUMBER: str | None = None
-    HARVEY_PHONE_NUMBER: str | None = None
-    CALENDLY_URL: str | None = None
+
     DEBUG: bool = False
     LOG_LEVEL: str = "info"
     

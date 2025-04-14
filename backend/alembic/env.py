@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from app.models.user import Base
+import os
+from sqlalchemy import create_engine
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -61,11 +63,18 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Get async database URL from environment variable
+    async_db_url = os.getenv("DATABASE_URL")
+    if not async_db_url:
+        raise ValueError("DATABASE_URL environment variable not set")
+
+    # Create a *synchronous* URL for Alembic by replacing the scheme
+    # Assumes DATABASE_URL starts with postgresql+asyncpg://
+    sync_db_url = async_db_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+    # Create synchronous engine using the modified URL
+    # Use NullPool for alembic, as recommended
+    connectable = create_engine(sync_db_url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(

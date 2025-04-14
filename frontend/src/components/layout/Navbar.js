@@ -9,8 +9,12 @@ const Navbar = () => {
   const { user, login, logout } = useAuth();
   const location = useLocation();
 
+  const handleGoogleLoginSuccess = (tokenResponse) => {
+    login(tokenResponse.code);
+  };
+
   const googleLogin = useGoogleLogin({
-    onSuccess: login,
+    onSuccess: handleGoogleLoginSuccess,
     flow: 'auth-code',
     scope: 
       'https://www.googleapis.com/auth/userinfo.profile ' + 

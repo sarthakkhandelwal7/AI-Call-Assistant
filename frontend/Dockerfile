@@ -5,9 +5,11 @@ WORKDIR /app
 
 # Declare build arguments
 ARG REACT_APP_GOOGLE_CLIENT_ID
+ARG REACT_APP_API_URL
 
 # Set environment variables from build arguments for the build process
 ENV REACT_APP_GOOGLE_CLIENT_ID=$REACT_APP_GOOGLE_CLIENT_ID
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 # Copy package files and install dependencies
 COPY package*.json ./

@@ -23,9 +23,7 @@ def create_app():
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            settings.FRONTEND_URL,
-            "http://localhost:3500",
-            "http://localhost:8000"
+            settings.FRONTEND_URL
         ],
         allow_credentials=True,
         allow_methods=["*"],

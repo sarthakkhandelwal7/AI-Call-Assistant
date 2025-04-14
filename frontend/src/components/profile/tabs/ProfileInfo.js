@@ -7,7 +7,7 @@ import { TwilioNumberPurchase } from './TwilioNumberPurchase';
 import { phoneNumberAPI, verificationAPI } from '../../../services/api';
 
 export const ProfileInfo = () => {
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, getCsrfToken } = useAuth();
   
   // --- State for Edit Mode ---
   const [editMode, setEditMode] = useState(false);
@@ -60,10 +60,17 @@ export const ProfileInfo = () => {
     }
   };
   
-  // Handle Timezone Change (remains direct update for simplicity)
+  // Handle Timezone Change (PUT - Needs CSRF)
   const handleTimezoneChange = async (e) => {
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error("CSRF Token missing for timezone change");
+        // Handle error appropriately, maybe show a message
+        return; 
+    }
     try {
-      await updateUserProfile({ timezone: e.target.value });
+      // Pass csrfToken to updateUserProfile
+      await updateUserProfile({ timezone: e.target.value }, csrfToken);
     } catch (err) {
       console.error('Failed to update timezone:', err);
     }
@@ -99,7 +106,15 @@ export const ProfileInfo = () => {
     setIsUpdatingProfile(true);
     setProfileUpdateError(null);
     setProfileUpdateSuccess(false);
-    let changesMade = false; // Flag to track if any valid changes were made
+    let changesMade = false;
+
+    const csrfToken = getCsrfToken(); // Get CSRF token
+    if (!csrfToken) {
+        setProfileUpdateError("Security token missing. Please log in again.");
+        setIsUpdatingProfile(false);
+        return;
+    }
+
     try {
       const updatesToSend = {}; 
 
@@ -141,12 +156,13 @@ export const ProfileInfo = () => {
 
       // Only call API if there are valid updates AND no URL validation error occurred
       if (Object.keys(updatesToSend).length > 0 && !profileUpdateError) { 
-          await updateUserProfile(updatesToSend);
+          // Pass updatesToSend AND csrfToken
+          await updateUserProfile(updatesToSend, csrfToken); 
           setProfileUpdateSuccess(true); 
-          setEditMode(false); // Exit edit mode only on successful save
-      } else if (!changesMade) { // Check if no valid changes were identified
+          setEditMode(false); 
+      } else if (!changesMade) {
           console.log("No valid changes detected, exiting edit mode.");
-          setEditMode(false); // Exit edit mode if no changes were made
+          setEditMode(false);
       }
       // If profileUpdateError is set (e.g., invalid URL), stay in edit mode
 
@@ -170,11 +186,19 @@ export const ProfileInfo = () => {
         setVerificationError('Please enter phone number in E.164 format (e.g., +12223334444).');
         return;
     }
+
+    const csrfToken = getCsrfToken(); // Get CSRF token
+    if (!csrfToken) {
+        setVerificationError("Security token missing. Please log in again.");
+        return; 
+    }
+
     setIsSendingOtp(true);
     setVerificationError(null);
     setVerificationStatus('sending');
     try {
-      await verificationAPI.sendOtp(userPhoneNumberInput);
+      // Pass phone number AND csrfToken
+      await verificationAPI.sendOtp(userPhoneNumberInput, csrfToken);
       setVerificationStatus('otpSent');
     } catch (err) {
       setVerificationError(err.message || 'Failed to send OTP.');
@@ -189,19 +213,31 @@ export const ProfileInfo = () => {
       setVerificationError('Please enter the verification code.');
       return;
     }
+
+    const csrfToken = getCsrfToken(); // Get CSRF token
+    if (!csrfToken) {
+        setVerificationError("Security token missing. Please log in again.");
+        return; 
+    }
+
     setIsCheckingOtp(true);
     setVerificationError(null);
     setVerificationStatus('verifying');
     try {
-      const result = await verificationAPI.checkOtp(userPhoneNumberInput, otpCode);
+      // Pass phone number, code, AND csrfToken
+      const result = await verificationAPI.checkOtp(userPhoneNumberInput, otpCode, csrfToken);
       if (result.verified) {
-        await updateUserProfile({ user_number: userPhoneNumberInput });
+        console.log("[handleCheckOtp] Check OTP successful. Preparing to call updateUserProfile.");
+        console.log("[handleCheckOtp] CSRF Token being passed to updateUserProfile:", csrfToken);
+        await updateUserProfile({ user_number: userPhoneNumberInput }, csrfToken);
+        console.log("[handleCheckOtp] updateUserProfile call completed.");
         setVerificationStatus('verified'); 
         setOtpCode(''); 
       } else {
         throw new Error('Verification failed.'); 
       }
     } catch (err) {
+      console.error("[handleCheckOtp] Error during checkOtp or updateUserProfile:", err);
       setVerificationError(err.message || 'Verification failed.');
       setVerificationStatus('error');
     } finally {
@@ -214,7 +250,12 @@ export const ProfileInfo = () => {
   const handleAssistantPurchaseSuccess = async (purchasedNumber) => {
     setTwilioNumber(purchasedNumber);
     setShowAssistantNumberPurchase(false);
-    await updateUserProfile({}); 
+    // updateUserProfile called here to refresh user state after purchase
+    // This call itself might need a CSRF token if it updates profile
+    // Let's assume updateUserProfile handles its own CSRF internally for now, 
+    // but if TwilioNumberPurchase directly calls buyNumber, it needs the token.
+    // const csrfToken = getCsrfToken();
+    // await updateUserProfile({}, csrfToken); // Refresh user data
   };
   
   const timezones = [

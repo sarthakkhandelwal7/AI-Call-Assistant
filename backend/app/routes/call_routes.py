@@ -39,9 +39,13 @@ async def handle_inbound_call(
             request_form = await request.form()  # returns a coroutine so await it
             from_number = request_form.get("From")
             twilio_number = request_form.get("To")
-            STREAM_URL = settings.STREAM_URL
             
-            logger.info(f"Inbound call from {from_number} to {twilio_number}")
+            # Dynamically construct the WebSocket URL
+            # Use request.url.hostname which should contain the App Runner domain
+            host = request.url.hostname
+            websocket_url = f"wss://{host}/audio-stream"
+            
+            logger.info(f"Inbound call from {from_number} to {twilio_number}. Using WS URL: {websocket_url}")
             
             result = await db.execute(
                 select(User).filter(User.twilio_number == twilio_number)
@@ -60,8 +64,8 @@ async def handle_inbound_call(
             twilML_response = f"""
                 <Response>
                     <Connect>
-                        <Stream url="{STREAM_URL}">
-                        <Parameter name="user_id" value="{user.id}"/>
+                        <Stream url=\"{websocket_url}\">  # Use the dynamically constructed URL
+                        <Parameter name=\"user_id\" value=\"{user.id}\"/>
                         </Stream>
                     </Connect>
                 </Response>

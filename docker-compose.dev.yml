@@ -1,0 +1,38 @@
+version: "3.8"
+
+# AWS Deployment Docker Compose Configuration
+# Assumes images have been built using multi-stage Dockerfiles
+# Environment variables (especially secrets) should be injected by the deployment environment (e.g., AWS ECS Task Definition)
+
+services:
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+            args:
+                # Pass the Google Client ID during build
+                REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+                REACT_APP_API_URL: ${BACKEND_API_URL}
+        image: 761018854711.dkr.ecr.us-east-1.amazonaws.com/ai-call-assistant-frontend-dev:v1.0.0 # Specify your AWS Deployment image name/tag
+        # No volumes needed for AWS Deployment
+        # Ports are exposed by Dockerfile (80), mapping handled by Load Balancer
+        restart: always
+
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        image: 761018854711.dkr.ecr.us-east-1.amazonaws.com/ai-call-assistant-backend-dev:v1.0.0 # Specify your AWS Deployment image name/tag
+        # No volumes needed for AWS Deployment
+        env_file:
+            # Use .env.dev as a base, but prefer injected environment variables
+            - ./backend/.env.dev
+        environment:
+            # Example: Override APP_ENV if not set in .env.dev or via injection
+            - APP_ENV=dev
+            # Injected variables from AWS/Terraform will override env_file values
+        # Ports are exposed by Dockerfile (8000), mapping handled by Load Balancer
+        restart: always
+        # No depends_on for external database
+# AWS Deployment typically doesn't define networks/volumes managed by compose
+# These are usually handled by the cloud infrastructure (VPC, EFS, RDS, etc.)

@@ -2,6 +2,7 @@
 
 # Git history
 .git
+.gitignore
 
 # Dockerfile itself
 Dockerfile
@@ -29,4 +30,33 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
-*.local 
+*.local
+
+# Node
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.npm
+.yarn
+
+# Build output (already handled by multi-stage build, but good practice)
+build/
+build_output/
+.output
+.nuxt
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# IDE / OS Files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log 

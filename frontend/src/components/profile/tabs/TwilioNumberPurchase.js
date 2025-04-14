@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Phone, X, Loader, AlertCircle, CheckCircle, Search } from 'lucide-react';
 import { Card, Button, Input } from '../../common/ui';
 import { phoneNumberAPI } from '../../../services/api';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export const TwilioNumberPurchase = ({ onPurchaseSuccess, onCancel }) => {
+  const { getCsrfToken } = useAuth();
   const [step, setStep] = useState('start'); // start, search, loading, available, purchasing, success, error
   const [areaCode, setAreaCode] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState([]);
@@ -49,15 +51,21 @@ export const TwilioNumberPurchase = ({ onPurchaseSuccess, onCancel }) => {
   const handlePurchase = async () => {
     if (!selectedNumber) return;
     
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        setError("Security token missing. Please log in again.");
+        setStep('error');
+        return;
+    }
+
     try {
       setStep('purchasing');
       setIsLoading(true);
       setError(null);
       
-      await phoneNumberAPI.buyNumber(selectedNumber);
+      await phoneNumberAPI.buyNumber(selectedNumber, csrfToken);
       
       setStep('success');
-      // Call the success handler to update the parent component
       onPurchaseSuccess(selectedNumber);
     } catch (err) {
       console.error('Error purchasing number:', err);
