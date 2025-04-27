@@ -117,21 +117,6 @@ The application is designed to be deployed fully to AWS using the provided Terra
 -   `/phone-number/...`: Endpoints for searching, buying, and retrieving Twilio numbers.
 -   `/verify/...`: Endpoints for sending and checking phone verification OTPs via Twilio Verify.
 
-## Development
-
-### Running Tests
-
-```bash
-# Navigate to backend directory
-cd backend
-# Set necessary environment variables for testing if needed (e.g., test database URL)
-poetry run pytest
-```
-
-### Stress Testing
-
-See the [Stress Testing Documentation](backend/tests/stress_tests/README.md) for details on evaluating performance.
-
 ## Acknowledgments
 
 This project draws inspiration from [donna](https://github.com/raviriley/donna).
