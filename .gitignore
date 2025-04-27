@@ -10,6 +10,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.python-version
 
 # Python Environments
 venv/
@@ -17,6 +18,7 @@ venv/
 env/
 ENV/
 .env/
+
 
 # Distribution / packaging
 .Python
@@ -119,6 +121,7 @@ credentials/
 responses/
 *.pem
 *.key
+.vscode/
 
 # Ignore specific potentially tracked files if necessary
 # Example: /path/to/some/tracked/file.txt
