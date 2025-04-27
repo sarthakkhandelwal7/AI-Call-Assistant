@@ -13,7 +13,7 @@ services:
                 # Pass the Google Client ID during build
                 REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
                 REACT_APP_API_URL: ${BACKEND_API_URL}
-        image: 761018854711.dkr.ecr.us-east-1.amazonaws.com/ai-call-assistant-frontend-dev:v1.0.0 # Specify your AWS Deployment image name/tag
+        image: your-docker-registry/ai-secretary-frontend:version # Specify your AWS Deployment image name/tag
         # No volumes needed for AWS Deployment
         # Ports are exposed by Dockerfile (80), mapping handled by Load Balancer
         restart: always
@@ -22,7 +22,7 @@ services:
         build:
             context: ./backend
             dockerfile: Dockerfile
-        image: 761018854711.dkr.ecr.us-east-1.amazonaws.com/ai-call-assistant-backend-dev:v1.0.0 # Specify your AWS Deployment image name/tag
+        image: your-docker-registry/ai-secretary-backend:version # Specify your AWS Deployment image name/tag
         # No volumes needed for AWS Deployment
         env_file:
             # Use .env.dev as a base, but prefer injected environment variables

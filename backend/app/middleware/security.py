@@ -99,7 +99,7 @@ async def verify_token_middleware(
                  raise HTTPException(
                      status_code=status.HTTP_403_FORBIDDEN, # 403 Forbidden is more appropriate for CSRF failure
                      detail="Missing CSRF token header"
-                 )
+            )
              # For GET/HEAD/OPTIONS, proceed without CSRF check (or pass None)
              csrf_token_header = None 
 

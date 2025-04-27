@@ -46,7 +46,7 @@ const makeRequest = async (url, options = {}, csrfToken = null) => {
 // Auth API
 export const authAPI = {
   // GET doesn't strictly need CSRF header based on current middleware
-  getUserInfo: () => makeRequest('/auth/get-user-info'), 
+  getUserInfo: () => makeRequest('/auth/get-user-info'),
   
   // POST needs CSRF header
   logout: (csrfToken) => makeRequest('/auth/logout', { method: 'POST' }, csrfToken),
