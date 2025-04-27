@@ -1,45 +1,38 @@
 version: "3.8"
+
+# AWS Deployment Docker Compose Configuration
+# Assumes images have been built using multi-stage Dockerfiles
+# Environment variables (especially secrets) should be injected by the deployment environment (e.g., AWS ECS Task Definition)
+
 services:
     frontend:
         build:
             context: ./frontend
             dockerfile: Dockerfile
-        volumes:
-            - ./frontend:/app
-            - /app/node_modules
-        ports:
-            - "3001:3000"
-        environment:
-            - CHOKIDAR_USEPOLLING=true
-            - WATCHPACK_POLLING=true
-            - WDS_SOCKET_PORT=3500
-        command: npm start
+            args:
+                # Pass the Google Client ID during build
+                REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+                REACT_APP_API_URL: ${BACKEND_API_URL}
+        image: your-docker-registry/ai-secretary-frontend:version # Specify your AWS Deployment image name/tag
+        # No volumes needed for AWS Deployment
+        # Ports are exposed by Dockerfile (80), mapping handled by Load Balancer
+        restart: always
 
-    db:
-        image: postgres:alpine
-        ports:
-            - "5432:5432"
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        image: your-docker-registry/ai-secretary-backend:version # Specify your AWS Deployment image name/tag
+        # No volumes needed for AWS Deployment
+        env_file:
+            # Use .env.dev as a base, but prefer injected environment variables
+            - ./backend/.env.dev
         environment:
-            - POSTGRES_USER=postgres
-            - POSTGRES_PASSWORD=postgres
-            - POSTGRES_DB=ai_secretary
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-
-    pgadmin:
-        image: dpage/pgadmin4
-        ports:
-            - "5050:80"
-        environment:
-            - PGADMIN_DEFAULT_EMAIL=admin@admin.com
-            - PGADMIN_DEFAULT_PASSWORD=admin
-            - PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False
-            - PGADMIN_CONFIG_CONSOLE_LOG_LEVEL=10
-        volumes:
-            - pgadmin_data:/var/lib/pgadmin
-        depends_on:
-            - db
-
-volumes:
-    postgres_data:
-    pgadmin_data:
+            # Example: Override APP_ENV if not set in .env.dev or via injection
+            - APP_ENV=dev
+            # Injected variables from AWS/Terraform will override env_file values
+        # Ports are exposed by Dockerfile (8000), mapping handled by Load Balancer
+        restart: always
+        # No depends_on for external database
+# AWS Deployment typically doesn't define networks/volumes managed by compose
+# These are usually handled by the cloud infrastructure (VPC, EFS, RDS, etc.)

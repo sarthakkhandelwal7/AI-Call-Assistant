@@ -5,7 +5,6 @@ import secrets
 from fastapi import HTTPException, status, Request
 import hashlib
 import os
-from dotenv import load_dotenv
 import requests
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -13,18 +12,22 @@ from googleapiclient.errors import HttpError
 from app.models.user import User, UserResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from app.core import Settings
+import logging
+from typing import Optional
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
 class AuthService:
-    def __init__(self):
-        self.google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-        self.google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-        self.jwt_secret = os.getenv("JWT_SECRET_KEY")
+    def __init__(self, settings: Settings):
+        self.google_client_id = settings.GOOGLE_CLIENT_ID
+        self.google_client_secret = settings.GOOGLE_CLIENT_SECRET
+        self.jwt_secret = settings.JWT_SECRET_KEY
         self.jwt_algorithm = "HS256"
         self.access_token_expire_minutes = 120
-        self.refresh_token_expire_days = 30
-
+        self.refresh_token_expire_days = 30,
+        self.frontend_url = settings.FRONTEND_URL
+        
     async def _get_user_timezone(self, refresh_token: str) -> str:
         """Get user's timezone from their primary calendar"""
         try:
@@ -64,49 +67,75 @@ class AuthService:
         token = jwt.encode(payload, self.jwt_secret, algorithm=self.jwt_algorithm)
         return token, expires, csrf_token
 
-    def verify_token(self, token: str, request: Request, csrf_token: str = None) -> uuid.UUID:
-        """Verify JWT token with fingerprint and CSRF token"""
+    def verify_token(self, token: str, request: Request, csrf_token: Optional[str] = None) -> uuid.UUID:
+        """Verify JWT token with fingerprint and CSRF token from header."""
         try:
             payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
             
+            # --- Fingerprint Check (remains the same) ---
             current_fingerprint = self._generate_fingerprint(request)
-            if payload["fingerprint"] != current_fingerprint:
+            if payload.get("fingerprint") != current_fingerprint:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid request origin"
+                    detail="Invalid request origin (fingerprint mismatch)"
                 )
             
-            if csrf_token and payload["csrf"] != csrf_token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid CSRF token"
-                )
+            # --- CSRF Check (using header value passed from middleware) ---
+            # Only perform check if a CSRF token was expected and provided (e.g., for non-GET requests)
+            expected_csrf = payload.get("csrf")
+            if csrf_token:
+                if not expected_csrf or csrf_token != expected_csrf:
+                    print(f"CSRF Mismatch: Header='{csrf_token}', Expected='{expected_csrf}'")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN, # Use 403 for CSRF failure
+                        detail="Invalid CSRF token"
+                    )
+            # Note: If csrf_token is None (e.g., for GET request), this check is skipped
+            # Add check if expected_csrf exists but csrf_token is None for non-GET? Maybe handled in middleware.
+
+            # --- Expiration Check (already handled by jwt.decode) ---
+
+            # --- Extract User ID --- 
+            user_id_str = payload.get("sub")
+            if not user_id_str:
+                 raise HTTPException(
+                     status_code=status.HTTP_401_UNAUTHORIZED,
+                     detail="Invalid token payload (missing subject)"
+                 )
+
+            return uuid.UUID(user_id_str)
             
-            return uuid.UUID(payload["sub"])
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
+        except jwt.InvalidTokenError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid token: {str(e)}"
+            )
+        # Keep other exception handling as is
 
-    
     async def verify_google_token(self, token: str) -> dict:
         try:
             print(f"Verifying token: {token}")
-            print(f"FRONTEND_URL: {os.getenv('FRONTEND_URL')}")
+
             token_response = requests.post(
                 'https://oauth2.googleapis.com/token',
                 data={
                     'code': token,
                     'client_id': self.google_client_id,
                     'client_secret': self.google_client_secret,
-                    'redirect_uri': os.getenv("FRONTEND_URL"),
+                    'redirect_uri': self.frontend_url,
                     'grant_type': 'authorization_code',
                 }
             )
             
+            token_response_text = token_response.text
             if not token_response.ok:
-                raise Exception(f"Token exchange failed: {token_response.text}")
+                print(f"Token exchange failed with status {token_response.status_code}. Response: {token_response_text}")
+                raise Exception(f"Token exchange failed: {token_response_text}")
             
             token_data = token_response.json()
             refresh_token = token_data.get('refresh_token')
@@ -131,9 +160,15 @@ class AuthService:
                 'refresh_token': refresh_token,
                 'timezone': timezone
             }
+        except ValueError as ve:
+            print(f"Configuration Error: {str(ve)}")
+            raise HTTPException(status_code=500, detail=str(ve))
         except Exception as e:
-            print(f"Token Verification Error: {str(e)}")
-            raise
+            print(f"Token Verification Error: {type(e).__name__} - {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail=f"Authentication failed: {str(e)}"
+            )
 
     async def get_or_create_user(self, db: AsyncSession, user_data: dict) -> User:
         try:

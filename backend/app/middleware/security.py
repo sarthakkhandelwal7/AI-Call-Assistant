@@ -5,6 +5,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from typing import Optional
 import time
 from app.services.auth_service import AuthService
+from app.services import get_auth_service # Import the dependency getter
+import jwt
 
 class SecurityMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
@@ -72,44 +74,53 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
 async def verify_token_middleware(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer),
-    auth_service: AuthService = Depends(AuthService)
+    auth_service: AuthService = Depends(get_auth_service), # Use the getter
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)) # Make Bearer optional
 ) -> Optional[str]:
-    """Verify access token from cookie or Authorization header"""
+    """Verify access token from cookie AND check CSRF header."""
     try:
-        # First try to get token from cookie
+        # --- Get Access Token (Cookie preferred) ---
         token = request.cookies.get("access_token")
-        print(f"Token from cookie: {token}")
-        
-        
-        # If no cookie, check Authorization header
         if not token and credentials:
             token = credentials.credentials
-        
         
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
+                detail="Authentication token missing"
             )
-            
-        # Verify the token
-        user_id = auth_service.verify_token(token, request)
+        
+        # --- Get CSRF Token from Header --- 
+        csrf_token_header = request.headers.get("X-CSRF-Token")
+        if not csrf_token_header:
+             # Allow GET/HEAD requests without CSRF token for non-state changing actions
+             # You might want to make this check more specific based on routes/methods
+             if request.method not in ("GET", "HEAD", "OPTIONS"):
+                 raise HTTPException(
+                     status_code=status.HTTP_403_FORBIDDEN, # 403 Forbidden is more appropriate for CSRF failure
+                     detail="Missing CSRF token header"
+            )
+             # For GET/HEAD/OPTIONS, proceed without CSRF check (or pass None)
+             csrf_token_header = None 
+
+        # --- Verify the token AND CSRF --- 
+        # Pass the CSRF token from header to the verification service
+        user_id = auth_service.verify_token(token, request, csrf_token=csrf_token_header)
         request.state.user_id = user_id
         
-        return token
+        return token # Return the verified access token
+
+    except jwt.ExpiredSignatureError: # Catch specific JWT errors if needed
+         raise HTTPException(
+             status_code=status.HTTP_401_UNAUTHORIZED,
+             detail="Token has expired"
+         )
+    except HTTPException as http_exc: # Re-raise existing HTTP exceptions
+        raise http_exc
     except Exception as e:
-        print(e)
+        print(f"Token/CSRF Verification Error in Middleware: {type(e).__name__} - {str(e)}")
+        # Generic error for security
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
+            detail="Invalid token or CSRF validation failed"
         )
-
-# async def verify_token_middleware2(
-#     request: Request,
-#     credentials: HTTPAuthorizationCredentials = Depends(security)
-# ):
-#     """Dummy middleware for token verification"""
-#     # This is just a placeholder. Actual implementation should be done in the routes.
-#     token = request.cookies.get("access_token")
-#     print(f"Token from cookie: {token}")

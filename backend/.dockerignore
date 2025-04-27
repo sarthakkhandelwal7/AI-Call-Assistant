@@ -1,0 +1,51 @@
+# Docker Build Context Exclusions
+
+# Git history
+.git
+
+# Dockerfile itself
+Dockerfile
+
+# Python virtual environment
+.venv
+env
+venv
+
+# Python cache/compiled files
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Tests folder
+tests/
+
+# Documentation (Optional)
+README.md
+
+# Environment files
+.env*
+.env.*
+!.env.example
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Alembic (if migrations run outside image build)
+# alembic/
+# alembic.ini
+
+# Terraform state (shouldn't be in backend context anyway)
+.terraform
+*.tfstate
+*.tfstate.*
+
+# Node (if used in backend build steps)
+# node_modules 

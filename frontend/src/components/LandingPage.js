@@ -9,8 +9,13 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { user, login } = useAuth();
 
+  const handleGoogleLoginSuccess = (tokenResponse) => {
+    // Extract only the code before calling the login function from AuthContext
+    login(tokenResponse.code);
+  };
+
   const googleLogin = useGoogleLogin({
-    onSuccess: login,
+    onSuccess: handleGoogleLoginSuccess, // Use the new handler
     flow: 'auth-code',
     scope: [
       'https://www.googleapis.com/auth/userinfo.profile',

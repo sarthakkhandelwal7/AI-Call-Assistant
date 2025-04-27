@@ -1,64 +1,127 @@
-# Dependencies
-node_modules/
-venv/
-env/
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
+.python-version
 
-# Environment files
-.env
-.env.local
-.env.development
-.env.production
+# Python Environments
+venv/
+*.venv
+env/
+ENV/
+.env/
 
-# IDE specific files
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
 
-# Build outputs
-dist/
+# Distribution / packaging
+.Python
 build/
-*.exe
-*.dll
+dist/
+sdist/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
+.env
+.env.*
+!.env.example
+
+# Compiled output
 *.so
-*.dylib
+*.pyc
 
 # Logs
-logs/
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local development
-.local/
-.cache/
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
 
-# API keys and secrets
-*.pem
-*.key
-credentials.json
+# Nuxt project unwanted files
+.nuxt/
+.output/
 
-# Media files
-*.mp3
-*.wav
-*.mp4
-*.mov
+# Yarn cache directory
+.yarn/
 
-# Temporary files
-tmp/
-temp/
-.python-version
-project-plan.md
+# Optional npm cache directory
+.npm
 
-# Directory
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# macOS
+.DS_Store
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars # Usually ignore unless default/example values
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Frontend Build Output (Explicitly add)
+build_output/
+
+# Other
 Design-Dock/
 credentials/
 responses/
+*.pem
+*.key
+.vscode/
 
-# Database
-alembic/
-alembic.ini
+# Ignore specific potentially tracked files if necessary
+# Example: /path/to/some/tracked/file.txt

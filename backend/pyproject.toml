@@ -23,6 +23,7 @@ alembic = "^1.14.1"
 psycopg2-binary = "^2.9.10"
 asyncpg = "^0.30.0"
 pydantic-settings = "^2.8.1"
+gunicorn = "^23.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

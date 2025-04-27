@@ -33,29 +33,48 @@ async def handle_inbound_call(
     """Handle incoming calls from Twilio"""
     # global call_status
     # call_status = CallStatus.IN_PROGRESS
-    request = await request.form()  # returns a corutine so await it
-    from_number = request.get("From")
-    twilio_number = request.get("To")
-    STREAM_URL = settings.STREAM_URL
-    result = await db.execute(
-        select(User).filter(User.twilio_number == twilio_number)
-    )
-    user = result.scalar_one_or_none()    
-    if not user:
-        return Response(content="User not found", media_type="text/plain")
-    
-    UserSession(user.id, user, from_number)
-    twilML_response = f"""
-        <Response>
-                <Connect>
-                    <Stream url="{STREAM_URL}">
-                    <Parameter name="user_id" value="{user.id}"/>
-                    </Stream>
-                </Connect>
-            </Response>
-    """
-
-    return Response(content=twilML_response, media_type="application/xml")
+    async with get_db_context() as db:
+        try:
+            request_form = await request.form()  # returns a coroutine so await it
+            from_number = request_form.get("From")
+            twilio_number = request_form.get("To")
+            
+            # Dynamically construct the WebSocket URL
+            # Use request.url.hostname which should contain the App Runner domain
+            host = request.url.hostname
+            websocket_url = f"wss://{host}/audio-stream"
+            
+            logger.info(f"Inbound call from {from_number} to {twilio_number}. Using WS URL: {websocket_url}")
+            
+            result = await db.execute(
+                select(User).filter(User.twilio_number == twilio_number)
+            )
+            user = result.scalar_one_or_none()    
+            if not user:
+                logger.warning(f"User not found for Twilio number: {twilio_number}")
+                return Response(content="User not found", media_type="text/plain")
+            
+            # Create and store session
+            session = UserSession(user.id, user, from_number)
+            
+            # Commit any changes and ensure connection is returned to pool
+            await db.commit()
+            
+            twilML_response = f"""
+                <Response>
+                    <Connect>
+                        <Stream url=\"{websocket_url}\">  # Use the dynamically constructed URL
+                        <Parameter name=\"user_id\" value=\"{user.id}\"/>
+                        </Stream>
+                    </Connect>
+                </Response>
+            """
+            
+            return Response(content=twilML_response, media_type="application/xml")
+        except Exception as e:
+            logger.error(f"Error in inbound call handler: {str(e)}")
+            await db.rollback()  # Make sure to rollback in case of error
+            return Response(content=f"Error: {str(e)}", status_code=500)
 
 
 # @router.get("/status")
