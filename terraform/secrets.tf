@@ -22,13 +22,13 @@ resource "aws_secretsmanager_secret_version" "app_secrets_initial" {
 
   # Store multiple secrets as key-value pairs in a single Secret Manager entry
   secret_string = jsonencode({
-    TWILIO_ACCOUNT_SID      = "YOUR_PROD_TWILIO_SID_PLACEHOLDER"         # Replace with actual SID if non-sensitive, or keep placeholder
-    TWILIO_AUTH_TOKEN       = "YOUR_PROD_TWILIO_TOKEN_PLACEHOLDER"       # Keep placeholder
-    TWILIO_VERIFY_SERVICE_SID = "YOUR_PROD_TWILIO_VERIFY_SID_PLACEHOLDER" # Replace with actual SID if non-sensitive, or keep placeholder
-    OPENAI_API_KEY          = "YOUR_PROD_OPENAI_KEY_PLACEHOLDER"         # Keep placeholder
-    JWT_SECRET_KEY          = random_password.jwt_secret.result        # Use a randomly generated secret
-    GOOGLE_CLIENT_ID        = "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER"      # Replace with actual ID (often non-sensitive)
-    GOOGLE_CLIENT_SECRET    = "YOUR_PROD_GOOGLE_SECRET_PLACEHOLDER"    # Keep placeholder
+    TWILIO_ACCOUNT_SID      = "YOUR_PROD_TWILIO_SID_PLACEHOLDER"         
+    TWILIO_AUTH_TOKEN       = "YOUR_PROD_TWILIO_TOKEN_PLACEHOLDER"       
+    TWILIO_VERIFY_SERVICE_SID = "YOUR_PROD_TWILIO_VERIFY_SID_PLACEHOLDER" 
+    OPENAI_API_KEY          = "YOUR_PROD_OPENAI_KEY_PLACEHOLDER"         
+    JWT_SECRET_KEY          = random_password.jwt_secret.result        
+    GOOGLE_CLIENT_ID        = "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER"      
+    GOOGLE_CLIENT_SECRET    = "YOUR_PROD_GOOGLE_SECRET_PLACEHOLDER"    
   })
 
   # Add lifecycle rule to prevent accidental deletion if desired

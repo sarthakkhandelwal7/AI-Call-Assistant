@@ -84,34 +84,45 @@ resource "aws_route_table_association" "public" {
 # Optional but usually needed for containers/functions in private subnets
 # to reach external services (e.g., Twilio, OpenAI, ECR)
 
-# Elastic IP for NAT Gateway
-resource "aws_eip" "nat" {
-  domain = "vpc"
-  tags = {
-    Name = "${var.project_name}-nat-eip-${var.environment}"
-  }
-}
+# --- Remove NAT Gateway EIP ---
+# resource "aws_eip" "nat" {
+#   domain     = "vpc"
+#   depends_on = [aws_internet_gateway.default]
+#   tags = merge(var.common_tags, {
+#       Name = "${var.project_name}-nat-eip-${var.environment}"
+#   })
+# }
 
-# NAT Gateway (place in a public subnet)
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id # Place in the first public subnet
+# --- Remove NAT Gateway Resource ---
+# resource "aws_nat_gateway" "default" {
+#   allocation_id = aws_eip.nat.id
+#   subnet_id     = aws_subnet.public[0].id # Place NAT GW in the first public subnet
+#   depends_on    = [aws_internet_gateway.default]
+#   tags = merge(var.common_tags, {
+#     Name = "${var.project_name}-nat-gw-${var.environment}"
+#   })
+# }
 
-  tags = {
-    Name = "${var.project_name}-nat-gw-${var.environment}"
-  }
-
-  depends_on = [aws_internet_gateway.gw]
-}
+# Private Route for NAT Gateway (REMOVE THIS ROUTE)
+# resource "aws_route" "private_nat_gateway" {
+#   route_table_id         = aws_route_table.private.id
+#   destination_cidr_block = "0.0.0.0/0"
+#   nat_gateway_id         = aws_nat_gateway.default.id
+# }
 
 # Route Table for Private Subnets
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block     = "0.0.0.0/0" # Route outbound traffic to NAT Gateway
-    nat_gateway_id = aws_nat_gateway.nat.id
-  }
+  # Remove the route block pointing to the deleted NAT Gateway
+  # route {
+  #   cidr_block     = "0.0.0.0/0" # Route outbound traffic to NAT Gateway
+  #   nat_gateway_id = aws_nat_gateway.nat.id 
+  # }
+
+  # You might add routes here later if private subnets need to reach
+  # other specific VPC resources (e.g., VPC Endpoints), but no default 
+  # internet route via NAT is needed now.
 
   tags = {
     Name = "${var.project_name}-private-rt-${var.environment}"

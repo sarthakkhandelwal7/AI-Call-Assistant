@@ -12,9 +12,11 @@ env
 venv
 
 # Python cache/compiled files
-__pycache__/
-*.py[cod]
-*.so
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
 
 # Tests folder
 tests/
@@ -24,6 +26,8 @@ README.md
 
 # Environment files
 .env*
+.env.*
+!.env.example
 
 # IDE / OS files
 .vscode/
@@ -36,4 +40,12 @@ logs/
 
 # Alembic (if migrations run outside image build)
 # alembic/
-# alembic.ini 
+# alembic.ini
+
+# Terraform state (shouldn't be in backend context anyway)
+.terraform
+*.tfstate
+*.tfstate.*
+
+# Node (if used in backend build steps)
+# node_modules 

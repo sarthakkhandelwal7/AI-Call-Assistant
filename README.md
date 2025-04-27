@@ -1,195 +1,137 @@
-# AI Secretary
+# AI Call Assistant
 
-An intelligent call screening system. This AI secretary uses natural language processing to screen calls, manage schedules, and make intelligent decisions about call handling.
+An intelligent call screening system using AI to screen calls, manage schedules, and make decisions about call handling based on real-time conversation analysis.
 
 ## Features
 
--   🎙️ Real-time call screening using OpenAI's Realtime API
--   📅 Google Calendar integration for schedule awareness
--   📞 Smart call handling (transfer, schedule, or end calls)
--   💬 Natural conversation with personality you want your assistant to be
--   📱 SMS scheduling link integration
--   🔄 Real-time audio streaming and processing
+-   🎙️ Real-time call screening using OpenAI.
+-   📅 Google Calendar integration for schedule awareness.
+-   📞 Smart call handling (transfer, schedule appointment via SMS, or end spam calls).
+-   💬 Natural language conversation capabilities.
+-   📱 SMS integration via Twilio for scheduling links.
+-   ☁️ Deployable to AWS using Terraform and Docker.
 
-## Technical Architecture
+## Technical Architecture (AWS Deployment)
 
-### Core Components
+The deployed application utilizes the following AWS services:
 
-![Architecture Diagram Incoming calls](diagrams/architecture.png)
+-   **Frontend:** React application built as static assets, hosted on **S3** and served globally via **CloudFront** (HTTPS, CDN).
+-   **Backend:** FastAPI application containerized with Docker, stored in **ECR**, and run using **AWS App Runner** for scalability and managed infrastructure.
+-   **Database:** **RDS PostgreSQL** instance running within a private VPC subnet for data persistence.
+-   **Secrets Management:** **AWS Secrets Manager** securely stores API keys (OpenAI, Twilio), Google OAuth credentials, and JWT secrets, injecting them into the App Runner environment at runtime.
+-   **Networking:** A custom **VPC** with public and private subnets isolates resources. App Runner connects to the VPC to access the RDS database.
+-   **Infrastructure as Code:** **Terraform** manages the provisioning and configuration of all AWS resources.
 
-1. **FastAPI Backend Server**
-
-    - RESTful endpoints for call handling
-    - WebSocket support for real-time audio streaming
-    - State management for call status
-
-2. **OpenAI Integration**
-
-    - Real-time audio processing
-    - Natural language understanding
-    - Context-aware decision-making
-
-3. **Twilio Integration**
-
-    - Call handling (inbound/outbound)
-    - Audio streaming
-    - SMS capabilities
-
-4. **Google Calendar Integration**
-    - Schedule checking
-    - Availability management
+_For a diagram and detailed explanation of the infrastructure components, see the [AWS Deployment Guide](terraform/instructions.md)._
 
 ## Setup
 
-### Prerequisites
+This project supports both local development and deployment to AWS.
 
--   Python 3.9 or higher
--   Poetry for dependency management
--   Twilio account and phone number
--   OpenAI API access
--   Google Cloud project with Calendar API enabled
+### 1. Local Development Setup
 
-### Environment Setup
+**Prerequisites:**
 
-The application supports three environments:
+-   Python 3.11 or higher
+-   Poetry (Python dependency manager)
+-   Node.js and npm (for frontend development)
+-   Docker (optional, for containerized testing)
+-   Git
+-   `ngrok` (or similar tunneling tool for receiving Twilio webhooks locally)
+-   Twilio Account & Phone Number
+-   OpenAI API Key
+-   Google Cloud Project with OAuth 2.0 Credentials (Client ID is needed locally)
 
--   `dev` - Development environment (default)
--   `test` - Testing environment
--   `prod` - Production environment
+**Environment Variables (Local `.env`):**
 
-To switch between environments, use the provided script:
-
-```bash
-# Give execute permission (first time only)
-chmod +x switch-env.sh
-
-# Switch to development environment
-./switch-env.sh dev
-
-# Switch to testing environment
-./switch-env.sh test
-
-# Switch to production environment
-./switch-env.sh prod
-```
-
-Each environment uses its own:
-
--   Configuration file (.env.dev, .env.test, .env.prod)
--   Database (ai_secretarydev, ai_secretarytest, ai_secretaryprod)
--   Settings appropriate for the environment
-
-### Environment Variables
-
-Create environment-specific .env files with the following variables:
+Create a `.env` file in the project root directory. You only need the following for basic local backend/frontend operation (referencing `backend/app/core/config.py`):
 
 ```env
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=your_twilio_number
-HARVEY_PHONE_NUMBER=target_transfer_number
-STREAM_URL=your_websocket_url
-OPENAI_API_KEY=your_openai_key
-CALENDLY_URL=your_scheduling_link
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+# Required
+OPENAI_API_KEY=sk-...
+TWILIO_ACCOUNT_SID=AC...
+TWILIO_AUTH_TOKEN=...
+JWT_SECRET_KEY=generate_a_strong_random_secret_string # e.g., using openssl rand -hex 32
+
+# Needed for Google Login (Frontend needs ID, Backend uses defaults locally if secret missing)
+GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=... # Optional locally, but needed for full backend auth flow testing
+
+
+# Database (Example for local Postgres instance)
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/ai_call_assistant_dev
+
+# Frontend URL (Used by React build)
+FRONTEND_URL=http://localhost:3001 # Default React dev server port
+
+# Set App Runner WS URL (for local Twilio testing via Ngrok)
+# You'll need to run ngrok http 8000 and use the https URL here
+STREAM_URL=wss://YOUR_NGROK_HTTPS_URL/audio-stream
 ```
 
-### Installation
+_Note: For full local testing including Google login token exchange, you might need to set `GOOGLE_CLIENT_SECRET` and `GOOGLE_REDIRECT_URI` and configure your Google Cloud credentials for `http://localhost:8000/oauth2callback`._
 
-1. Clone the repository:
+**Installation & Running Locally:**
 
+1.  **Clone:** `git clone https://github.com/sarthakkhandelwal7/AI-Call-Assistant.git`
+2.  **Backend Setup:**
     ```bash
-    git clone https://github.com/sarthakkhandelwal7/AI-Call-Assistant
-    cd ai-call-assistant/backend
-    ```
-
-2. Install dependencies:
-
-    ```bash
+    cd AI-Call-Assistant/backend
     poetry install
-    ```
-
-3. Set up Google Calendar credentials (to register the application with Google):
-
-    - Create a project in the Google Cloud Console
-    - Enable Calendar API
-    - Go to Credentials and generate OAuth 2.0 credentials
-    - Save GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env
-    - Register http://localhost:3001 or your frontend uri in Authorized JavaScript origins
-
-4. Start the server:
-    ```bash
+    # Set up local database if needed
+    # Run migrations (requires DATABASE_URL to be set)
+    # alembic upgrade head
+    # Start backend (listens on port 8000 by default)
     poetry run uvicorn app.main:app --reload
     ```
-5. Run the docker-compose file to run the front end in a docker container.
-    - Frontend URL: http://localhost:3001
-    - You can register your Google Calander to fetch events
+3.  **Frontend Setup:**
+    ```bash
+    cd ../frontend
+    npm install
+    # Start frontend (access at http://localhost:3001)
+    npm start
+    ```
+4.  **Ngrok:** If testing Twilio webhooks:
+    ```bash
+    ngrok http 8000
+    ```
+    Update your Twilio number's webhook settings to use the ngrok HTTPS URL (e.g., `https://<ngrok_id>.ngrok.io/calls/inbound`) and set the `STREAM_URL` in your `.env`.
+
+### 2. AWS Deployment
+
+The application is designed to be deployed fully to AWS using the provided Terraform configuration. This includes setting up the VPC, RDS database, ECR repository, App Runner service, S3 bucket, CloudFront distribution, and all necessary IAM roles and secrets.
+
+**For detailed, step-by-step deployment instructions, please see:**
+
+➡️ **[AWS Deployment Guide](terraform/instructions.md)** ⬅️
 
 ## API Endpoints
 
-### Call Management
-
--   `POST /calls/inbound`: Handle incoming Twilio calls
--   `POST /calls/outbound`: Initiate outbound calls
--   `GET /calls/status`: Check the current call status
--   `WS /audio-stream`: WebSocket endpoint for audio streaming
-
-## Call Flow
-
-1. The caller dials the Twilio number
-2. Twilio webhooks to backend
-3. WebSocket connection established
-4. Audio streamed to OpenAI
-5. AI makes decisions based on:
-    - Conversation context
-    - Calendar availability
-    - Call importance
-6. Actions executed:
-    - Transfer to personal number
-    - Send scheduling link
-    - End call (for spam)
+-   `/auth/google-login`: Handles Google OAuth callback and authentication.
+-   `/auth/get-user-info`: Retrieves information for the logged-in user.
+-   `/auth/logout`: Logs the user out.
+-   `/user/update-profile`: Updates user profile details.
+-   `/calls/inbound`: Handles incoming Twilio calls (Twilio Webhook).
+-   `/calls/status`: (GET) Check the current call status (if any).
+-   `/ws/audio-stream`: WebSocket endpoint for bi-directional audio streaming during a call.
+-   `/phone-number/...`: Endpoints for searching, buying, and retrieving Twilio numbers.
+-   `/verify/...`: Endpoints for sending and checking phone verification OTPs via Twilio Verify.
 
 ## Development
 
 ### Running Tests
 
 ```bash
+# Navigate to backend directory
+cd backend
+# Set necessary environment variables for testing if needed (e.g., test database URL)
 poetry run pytest
 ```
 
 ### Stress Testing
 
-The application includes a comprehensive stress testing framework to evaluate performance under various load conditions. These tests ensure the system can handle real-world call volumes and maintain reliability.
+See the [Stress Testing Documentation](backend/tests/stress_tests/README.md) for details on evaluating performance.
 
-Available test types:
+## Acknowledgments
 
--   HTTP Basic Test
--   Throughput Test
--   Resilience Test
--   Load Test
--   High Concurrency Test
--   Wave Pattern Test
--   Burst Pattern Test
--   Stability Test
-
-For detailed documentation on running stress tests and interpreting results, see the [Stress Testing Documentation](backend/tests/stress_tests/README.md).
-
-### Local Development
-
-1. Use ngrok for Twilio webhook:
-
-    ```bash
-    ngrok http 8000
-    ```
-
-2. Update Twilio webhook URL with ngrok URL
-
-3. Start server in debug mode:
-    ```bash
-    poetry run uvicorn app.main:app --reload --port 8000
-    ```
-
-### Acknowledgments
-
-This project draws inspiration from [donna](https://github.com/raviriley/donna). It is a valuable reference while exploring and enhancing capabilities in building applications powered by LLMs like ChatGPT.
+This project draws inspiration from [donna](https://github.com/raviriley/donna).

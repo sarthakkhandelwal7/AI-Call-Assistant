@@ -40,7 +40,7 @@ resource "aws_db_instance" "default" {
   engine_version         = "15" # Choose a recent supported version
   instance_class         = "db.t3.micro" # Free tier eligible instance class
   allocated_storage      = 20            # Free tier eligible storage (GB)
-  storage_type           = "gp3"         # Or gp2
+  storage_type           = "gp2"         # CHANGE TO GP2 for Free Tier eligibility
 
   # Ensure db_name is alphanumeric
   db_name                = "${replace(var.project_name, "-", "_")}${var.environment}"
@@ -51,9 +51,17 @@ resource "aws_db_instance" "default" {
   db_subnet_group_name   = aws_db_subnet_group.default.name
   vpc_security_group_ids = [aws_security_group.rds.id] # Use the RDS SG from security_groups.tf
 
-  publicly_accessible    = false # Keep it private
-  skip_final_snapshot    = true  # Ok for dev, set to false for prod backups
-  backup_retention_period = 0    # Free tier setting, increase for prod
+  # Availability / Backup
+  multi_az               = false # Keep as false for lower cost/simplicity unless HA needed
+  skip_final_snapshot    = true  # Set to false for production if you want a final backup
+  backup_retention_period = 0    # Set higher (e.g., 7 days) for production backups
+
+  # Networking
+  publicly_accessible = false # Set to false now that we use Bastion/Tunnel for access
+
+  # Other Settings
+  storage_encrypted   = true
+  deletion_protection = false # Set to true for production safety
 
   tags = {
     Name        = "${var.project_name}-rds-instance-${var.environment}"
@@ -61,8 +69,8 @@ resource "aws_db_instance" "default" {
     Environment = var.environment
   }
 
-  # Prevent accidental deletion in production
-  # deletion_protection = var.environment == "prod" ? true : false
+  # Ensure subnet group is created first
+  depends_on = [aws_db_subnet_group.default]
 }
 
 # --- Outputs ---

@@ -123,7 +123,6 @@ resource "aws_apprunner_service" "backend" {
         port = "8000" # Port the backend container listens on
 
         # === SECTION 1: runtime_environment_secrets ===
-        # These correctly fetch LIVE values from specific keys in Secrets Manager
         runtime_environment_secrets = {
           TWILIO_AUTH_TOKEN     = "${aws_secretsmanager_secret.app_secrets.arn}:TWILIO_AUTH_TOKEN::", 
           OPENAI_API_KEY        = "${aws_secretsmanager_secret.app_secrets.arn}:OPENAI_API_KEY::",
@@ -141,7 +140,6 @@ resource "aws_apprunner_service" "backend" {
           LOG_LEVEL = "info"
           FRONTEND_URL = "https://${aws_cloudfront_distribution.frontend_distribution.domain_name}"
           DATABASE_URL = "postgresql+asyncpg://${jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string).username}:${jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string).password}@${aws_db_instance.default.endpoint}/${aws_db_instance.default.db_name}",
-          # Removed: GOOGLE_CLIENT_ID, TWILIO_ACCOUNT_SID, TWILIO_VERIFY_SERVICE_SID
         }
       }
     }
@@ -149,18 +147,22 @@ resource "aws_apprunner_service" "backend" {
   }
 
   network_configuration {
+    # Make App Runner publicly accessible
+    ingress_configuration {
+      is_publicly_accessible = true
+    }
+    # Still need egress to VPC to reach RDS in private subnet
     egress_configuration {
       egress_type = "VPC"
       vpc_connector_arn = aws_apprunner_vpc_connector.default.arn
     }
-    # App Runner doesn't directly configure inbound, it's public by default
-    # or uses a VPC endpoint if ingress_type = "VPC" (more complex)
   }
 
   instance_configuration {
-    cpu    = "1024" # 1 vCPU
-    memory = "2048" # 2 GB (Free tier eligible values)
-    instance_role_arn = aws_iam_role.apprunner_instance_role.arn # Assign the INSTANCE role here
+    # Reduce size to fit Free Tier better
+    cpu    = "512"  # 0.5 vCPU
+    memory = "1024" # 1 GB 
+    instance_role_arn = aws_iam_role.apprunner_instance_role.arn 
   }
 
   tags = {
@@ -177,11 +179,11 @@ resource "aws_apprunner_service" "backend" {
   ]
 }
 
-# VPC Connector required for App Runner to access resources in a VPC (like RDS)
+# VPC Connector (Still needed for App Runner to reach private RDS)
 resource "aws_apprunner_vpc_connector" "default" {
   vpc_connector_name = "${var.project_name}-vpc-connector-${var.environment}"
-  subnets            = aws_subnet.private[*].id # Use private subnets
-  security_groups    = [aws_security_group.app_runner.id] # Use App Runner SG
+  subnets            = aws_subnet.private[*].id # Connector uses private subnets
+  security_groups    = [aws_security_group.app_runner.id] # App Runner SG
 
   tags = {
     Project     = var.project_name
