@@ -24,7 +24,7 @@ The deployed application utilizes the following AWS services:
 
 ### System Architecture
 
-![System Architecture](diagrams/system_design.png)
+![System Architecture](diagrams/system_architecture.png)
 
 ### Call Flow Diagram
 
