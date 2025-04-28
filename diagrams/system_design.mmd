@@ -1,0 +1,71 @@
+graph TB
+    subgraph User Interaction
+        U["<i class='fa fa-user'></i> User"] -->|"Accesses UI"| B["Browser"]
+        Caller["<i class='fa fa-phone'></i> Caller"] -->|"Makes"| Phone["Phone Call"]
+    end
+
+    subgraph External Services
+        Google["<i class='fab fa-google'></i> Google OAuth"]
+        Twilio["<i class='fa fa-phone'></i> Twilio API"]
+        OpenAI["<i class='fa fa-robot'></i> OpenAI API"]
+    end
+
+    subgraph AWS Cloud
+        CF["<i class='fab fa-aws'></i> CloudFront Distribution"]
+        S3["<i class='fab fa-aws'></i> S3 Bucket (Frontend Build)"]
+        AppRunner["<i class='fab fa-aws'></i> App Runner Service<br>(Backend API)"]
+        SM["<i class='fab fa-aws'></i> Secrets Manager"]
+        ECR["<i class='fab fa-aws'></i> ECR"]
+
+        subgraph VPC["AWS VPC"]
+            subgraph PublicSubnets["Public Subnets"]
+                IGW["<i class='fab fa-aws'></i> Internet Gateway"]
+            end
+
+            subgraph PrivateSubnets["Private Subnets"]
+                AppRunnerENI["<i class='fas fa-network-wired'></i> App Runner ENIs"]
+                RDSInstance["<i class='fa fa-database'></i> RDS PostgreSQL"]
+            end
+        end
+    end
+
+    %% USER FLOWS
+    %% Web User Flow
+    B -.->|"HTTPS Request"| CF
+    CF -.->|"Serves Static Content"| S3
+    B -.->|"API Requests"| AppRunner
+
+    %% Phone User Flow  
+    Phone ==> Twilio
+    Twilio ==>|"Webhook Notification"| AppRunner
+
+    %% App Runner Internal Connections
+    AppRunner --- AppRunnerENI
+    AppRunnerENI -->|"Store/Retrieve Data"| RDSInstance
+    AppRunnerENI -->|"Get Credentials"| SM
+    
+    %% External Service Connections
+    AppRunner -->|"OAuth Flow"| Google
+    AppRunner -->|"Voice/SMS Control"| Twilio
+    AppRunner -->|"AI Processing"| OpenAI
+    AppRunner -->|"Load Images"| ECR
+
+    %% Networking
+    PublicSubnets -->|"Route to Internet"| IGW
+    AppRunnerENI -->|"Outbound Traffic"| IGW
+
+    %% Styling
+    classDef aws fill:#FF9900,stroke:#333,stroke-width:2px,color:#fff;
+    class CF,S3,VPC,AppRunner,RDSInstance,ECR,SM,IGW aws;
+    classDef external fill:#ececff,stroke:#9494ff,stroke-width:2px;
+    class Google,Twilio,OpenAI external;
+    classDef user fill:#c9d7e8,stroke:#333,stroke-width:2px;
+    class U,B,Caller,Phone user;
+    classDef network fill:#dae8fc,stroke:#6c8ebf,stroke-width:1px;
+    class AppRunnerENI,VPCInternal network;
+
+    %% Different edge styles for different connection types
+    linkStyle 0,1 stroke:#6c8ebf,stroke-width:1.5px;
+    linkStyle 2,3 stroke:#6c8ebf,stroke-width:1.5px;
+    linkStyle 4,5 stroke:#82b366,stroke-width:2.5px,stroke-dasharray: 5 5;
+    linkStyle 6,7,8,9,10,11,12 stroke:#333,stroke-width:1.5px;

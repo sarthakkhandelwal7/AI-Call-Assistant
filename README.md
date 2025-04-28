@@ -22,7 +22,15 @@ The deployed application utilizes the following AWS services:
 -   **Networking:** A custom **VPC** with public and private subnets isolates resources. App Runner connects to the VPC to access the RDS database.
 -   **Infrastructure as Code:** **Terraform** manages the provisioning and configuration of all AWS resources.
 
-_For a diagram and detailed explanation of the infrastructure components, see the [AWS Deployment Guide](terraform/instructions.md)._
+### System Architecture
+
+![System Architecture](diagrams/system_design.png)
+
+### Call Flow Diagram
+
+![Call Flow](diagrams/call-flow.png)
+
+_For a detailed explanation of the infrastructure components, see the [AWS Deployment Guide](terraform/instructions.md)._
 
 ## Setup
 

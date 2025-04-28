@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph CallParticipants["Call Participants"]
+        Caller["Phone / Caller"]
+        AgentPhone["Agent Phone / Transfer Target"]
+    end
+
+    subgraph Backend["Backend (FastAPI - Multi-User Context)"]
+        direction TB
+        API["API Endpoints"]
+        WS["WebSocket Handler"]
+        Calendar["Calendar Service"]
+        Utils["Utility Functions"]
+        RDS["RDS Database (User Configs)"]
+    end
+
+    subgraph External["External Services"]
+        Twilio["Twilio"]
+        OpenAI["OpenAI"]
+        Google["Google Calendar"]
+        SMS["SMS Service"]
+    end
+
+    Caller -->|"Makes call"| Twilio
+    Twilio -->|"Webhook"| API
+    API -->|"Lookup User"| RDS
+    RDS -->|"User data"| API
+    API -->|"Establish WS with User<br> Context"| WS
+    WS -->|"Stream Audio"| OpenAI
+    WS -->|"Get Schedule (User Context)"| Calendar
+    Calendar -->|"Fetch Events (User's Calendar)"| Google
+    OpenAI -->|"AI Response"| WS
+    WS -->|"Actions (User Context)"| Utils
+    Utils -->|"Transfer Call (User's Agent)"| AgentPhone
+    Utils -->|"Send SMS (User's Config)"| SMS
+    Utils -->|"End Call"| Twilio
+
+    %% Optional: Show services getting config from DB if needed
+    %% Calendar -->|"Get User Token"| RDS
+    %% Utils -->|"Get User Settings"| RDS
